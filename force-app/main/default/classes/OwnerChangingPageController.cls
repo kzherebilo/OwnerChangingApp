@@ -1,12 +1,12 @@
 public without sharing class OwnerChangingPageController {
 
-    public String selectedOldProfileId { get; set; }
-    public String selectedOldUserId { get; set; }
-    public String selectedNewProfileId { get; set; }
-    public String selectedNewUserId { get; set; }
-    public String oldUserNumberRecords {get; set; }
-    public String newUserNumberRecords {get; set; }
-    public String operationResult { get; set; }
+    public String   selectedOldProfileId    { get; set; }
+    public String   selectedOldUserId       { get; set; }
+    public String   selectedNewProfileId    { get; set; }
+    public String   selectedNewUserId       { get; set; }
+    public String[] selectedObjects         { get; set; }
+    public String   operationResult         { get; set; }
+
 
     public List<SelectOption> getUserProfiles() {
         List<SelectOption> profileOptions = new List<SelectOption> ();
@@ -35,25 +35,61 @@ public without sharing class OwnerChangingPageController {
         return userOptions;
     }
 
-    // public Integer getNumberOfOldUserAccounts() {
-    //     if (selectedOldUserId == '') { return 0; }
-    //     AggregateResult queryResult = [SELECT COUNT(Id) FROM ACCOUNT WHERE OwnerId=:selectedOldUserId];
-    //     return 1;
-    // }
+    public List<SelectOption> getOrgObjects() {
+        List<SelectOption> orgObjects = new List<SelectOption> ();
+        List<String> objectsLabels;
+        Map<String, String> standardObjectNames = new Map<String, String> ();
+        // Map<String, String> customObjectNames = new Map<String, String> ();
+        Map<String, Schema.SObjectType> globalDescribe = Schema.getGlobalDescribe();
+        for (Schema.SObjectType objectType : globalDescribe.values()) {
+            Schema.DescribeSObjectResult objectDescription = objectType.getDescribe();
+            if (!objectDescription.isCustom() && objectDescription.isCreateable() && objectDescription.isSearchable()) {
+                standardObjectNames.put(objectDescription.getLabel(), objectDescription.getName());
+            }
+        }
+        objectsLabels = new List<String> (standardObjectNames.keySet());
+        objectsLabels.sort();
+        for (String objectLabel : objectsLabels) {
+            orgObjects.add(new SelectOption(standardObjectNames.get(objectLabel), objectLabel));
+        }
+        return orgObjects;
+    }
+
+    public String getNumOfObjects() {
+        if (selectedObjects == null) { 
+            return '';
+        }
+        else {
+            return selectedObjects.size().format();
+        }
+    }
 
     public void reassignOwner() {
         if (selectedOldUserId == '') { operationResult = 'Failed. No old user ID'; return;}
         if (selectedNewUserId == '') { operationResult = 'Failed. No new user ID'; return; }
+        if (selectedObjects == null) { operationResult = 'Failed. No objects selected'; return; }
+        if (selectedObjects.size() == 0) { operationResult = 'Failed. No objects selected'; return; }
 
-        List<Account> accountsToUpdate = new List<Account> ([SELECT Id, OwnerId FROM Account WHERE OwnerId=:selectedOldUserId]);
-        if (accountsToUpdate.size() == 0) { operationResult = 'Failed. No accounts to process'; return; }
+        List<Database.SaveResult> resultList = new List<Database.SaveResult> ();
+        Integer numberOfRecordsUpdated = 0;
+        Boolean isReassignmentSuccessful = true;
 
-        Boolean result = OwnerChangingHelper.changeOwner(accountsToUpdate, selectedNewUserId);
-        if (result) {
-            operationResult = 'Success';
+        for (String objectName : selectedObjects) {
+            String queryString = 
+                'SELECT OwnerId FROM '
+                + objectName
+                + ' WHERE OwnerId=:selectedOldUserId';
+            List<SObject> records = Database.query(queryString);
+            resultList = OwnerChangingHelper.changeOwner(records, selectedNewUserId);
+            for (Database.SaveResult result : resultList) {
+                isReassignmentSuccessful = result.isSuccess();
+                if (!result.isSuccess()) break;
+            }
+            if (!isReassignmentSuccessful) break;
+            numberOfRecordsUpdated += resultList.size();
         }
-        else {
-            operationResult = 'Failed';
-        }
+        operationResult = isReassignmentSuccessful
+            ? 'Success | Number Of Records Updated: ' + numberOfRecordsUpdated.format()
+            : 'Failed';
     }
 }

@@ -1,12 +1,12 @@
 <apex:page label="OwnerChangingPage" controller="OwnerChangingPageController" >
     <apex:form>
         <apex:pageBlock>
-            <apex:pageBlockSection columns="2" >
+            <apex:pageBlockSection columns="3" >
 
                 <apex:pageBlockSectionItem>
                     <apex:pageBlockSection columns="1" >
                         <apex:outputLabel>FROM USER</apex:outputLabel>
-                        <apex:pageBlockSectionItem  >
+                        <apex:pageBlockSectionItem>
                             <apex:outputLabel>Old user profile</apex:outputLabel>
                             <apex:selectList id="oldUserProfilePicklist" value="{! selectedOldProfileId }" multiselect="false" size="1">
                                 <apex:actionSupport event="onchange" reRender="oldUserPicklist,userInfo" />
@@ -24,6 +24,21 @@
                 </apex:pageBlockSectionItem>
 
                 <apex:pageBlockSectionItem>
+                    <apex:pageBlockSection columns="1">
+                        <apex:outputLabel>SELECT OBJECTS</apex:outputLabel>
+                        <apex:pageBlockSectionItem>
+                            <apex:selectList id="objectsPicklist" value="{! selectedObjects }" multiselect="true" size="5">
+                                <apex:actionSupport event="onchange" reRender="userInfo" />
+                                <apex:selectOptions value="{! orgObjects }"></apex:selectOptions>
+                            </apex:selectList>
+                        </apex:pageBlockSectionItem>
+                        <apex:pageBlockSectionItem>
+                            <apex:commandButton id="reassignOwner" action="{! reassignOwner }" value="Reassign" ></apex:commandButton>
+                        </apex:pageBlockSectionItem>
+                    </apex:pageBlockSection> 
+                </apex:pageBlockSectionItem>
+
+                <apex:pageBlockSectionItem>
                     <apex:pageBlockSection columns="1" >
                         <apex:outputLabel>TO USER</apex:outputLabel>
                         <apex:pageBlockSectionItem  >
@@ -37,7 +52,6 @@
                             <apex:outputLabel>New user</apex:outputLabel>
                             <apex:selectList id="newUserPicklist" value="{! selectedNewUserId }" multiselect="false" size="1">
                                 <apex:actionSupport event="onchange" reRender="userInfo" />
-                                <apex:actionSupport event="onreset" reRender="userInfo" />
                                 <apex:selectOptions value="{! newUsers }" ></apex:selectOptions>
                             </apex:selectList>
                         </apex:pageBlockSectionItem>
@@ -47,31 +61,36 @@
             </apex:pageBlockSection>
         </apex:pageBlock>
     
-        <apex:pageBlock id="userInfo" >
-            <apex:pageBlockSection columns="2" >
+        <apex:pageBlock id="userInfo" rendered="true" >
+            <apex:pageBlockSection columns="1" collapsible="true" >
                 <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Selected profile" />
+                    <apex:outputLabel value="Selected from-user profile" />
                     <apex:outputText id="SelectedOldProfile" value="{! selectedOldProfileId }" />
                 </apex:pageBlockSectionItem>
                 <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Selected profile" />
-                    <apex:outputText id="SelectedNewProfile" value="{! selectedNewProfileId }" />
-                </apex:pageBlockSectionItem>
-                <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Selected user" />
+                    <apex:outputLabel value="Selected from-user" />
                     <apex:outputText id="SelectedOldUserName" value="{! selectedOldUserId }" />
                 </apex:pageBlockSectionItem>
                 <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Selected user" />
+                    <apex:outputLabel value="Selected to-user profile" />
+                    <apex:outputText id="SelectedNewProfile" value="{! selectedNewProfileId }" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem>
+                    <apex:outputLabel value="Selected to-user" />
                     <apex:outputText id="SelectedNewUserName" value="{! selectedNewUserId }" />
                 </apex:pageBlockSectionItem>
-            </apex:pageBlockSection>
-        </apex:pageBlock>
-
-        <apex:pageBlock id="userActions">
-            <apex:pageBlockSection columns="2">
-                <apex:commandButton id="reassignOwner" action="{! reassignOwner }" value="Reassign" ></apex:commandButton>
-                <apex:outputLabel value="{! operationResult }"></apex:outputLabel>
+                <apex:pageBlockSectionItem>
+                    <apex:outputLabel value="Selected objects" />
+                    <apex:outputText id="SelectedObjects" value="{! selectedObjects }" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem>
+                    <apex:outputLabel value="Number of objects selected" />
+                    <apex:outputText value="{! numOfObjects }" />
+                </apex:pageBlockSectionItem>
+                <apex:pageBlockSectionItem>
+                    <apex:outputLabel value="Operation result" />
+                    <apex:outputText value="{! operationResult }" />
+                </apex:pageBlockSectionItem>
             </apex:pageBlockSection>
         </apex:pageBlock>
 

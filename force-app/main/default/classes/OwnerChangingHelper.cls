@@ -1,32 +1,51 @@
+/**
+ * Class of helper methods, designed for the Owner Cnahging Application
+ * (test assignment #1)
+ * 
+ * @author Konstantin Zherebilo
+ * @date 10/14/2021
+ * 
+ */
 public without sharing class OwnerChangingHelper {
 
-
-    public static Boolean changeOwner(List<sObject> records, String newOwnerId) {
+    /**
+     * Helper method to substitute newOwnerId for the current owner in the given
+     * list of sObjects. If update fails, the database rolls back. The result of
+     * update is returned.
+     * @author Konstantin Zherebilo
+     * @date 10/14/2021
+     * @param records: List of sObjects whose owner id is to be updated
+     * @param newOwnerId: User ID of the new owner
+     * @return Database.SaveResult[] 
+     */
+    public static List<Database.SaveResult> changeOwner(
+            List<sObject> records, String newOwnerId) {
         
-        if (records.isEmpty()) { return true; }
-        switch on records[0] {
-            when Account r {
-                for(sObject record : records) {
-                    ((Account)record).OwnerId = newOwnerId;
-                }
-            }
-            when Contact r {
-                for(sObject record : records) {
-                    ((Contact)record).OwnerId = newOwnerId;
-                }
-            }
-            when else {
-                return false;
-            }
+        List<Database.SaveResult> updateResults = new List<Database.SaveResult> ();
+
+        // Make sure the list of records is not empty; otherwise return empty
+        // array of Database.SaveResult
+        if (records.isEmpty()) return updateResults;
+
+        // Iterate over the list of sObjects and override the 'OwnerId' field
+        for (sObject record : records) {
+            record.put('OwnerId', newOwnerId);
         }
+
+        // Create a save point of the database
         Savepoint sp = Database.setSavepoint();
-        Database.SaveResult[] updateResults = Database.update(records, true);
+        // Update records in the database with the option allOrNone enabled (no
+        // partial success is allowed)
+        updateResults = Database.update(records, true);
+        // Iterate over the results of the transaction and roll back the database
+        // on errors, if any
         for(Database.SaveResult result : updateResults) {
             if (!result.isSuccess()) {
                 Database.rollback(sp);
-                return false;
+                break;
             }
         }
-        return true;
+
+        return updateResults;
     }
 }
