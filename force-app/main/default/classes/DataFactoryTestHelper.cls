@@ -34,6 +34,7 @@ public class DataFactoryTestHelper {
         List<Account> accountList = new List<Account> ();
         for (Integer i = 0; i < 10; i++) {
             String accountName = 'Test Account ' + i;
+            accountName = 'Test Account ' + accountName.hashCode().format();
             accountList.add(new Account(Name = accountName));
         }
         System.runAs(owner) {
@@ -46,6 +47,7 @@ public class DataFactoryTestHelper {
         List<Contact> contactList = new List<Contact> ();
         for (Integer i = 0; i < 10; i++) {
             String contactName = 'Test Contact ' + i;
+            contactName = 'Test Contact ' + contactName.hashCode().format();
             contactList.add(new Contact(LastName = contactName));
         }
         System.runAs(owner) {
