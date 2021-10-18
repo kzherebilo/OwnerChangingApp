@@ -34,9 +34,10 @@ public without sharing class OwnerChangingHelper {
 
         // Create a save point of the database
         Savepoint sp = Database.setSavepoint();
-        // Update records in the database with the option allOrNone enabled (no
-        // partial success is allowed)
-        updateResults = Database.update(records, true);
+        // Update records in the database with the option allOrNone disabled
+        // (partial success is allowed, but the databese is rolled back if any
+        // of the records fails to update)
+        updateResults = Database.update(records, false);
         // Iterate over the results of the transaction and roll back the database
         // on errors, if any
         for(Database.SaveResult result : updateResults) {

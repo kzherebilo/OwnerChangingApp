@@ -29,7 +29,8 @@ public without sharing class OwnerChangingPageController {
     public List<SelectOption> getNewUsers() {
         List<SelectOption> userOptions = new List<SelectOption> ();
         userOptions.add(new SelectOption('', '--None--'));
-        for (User usr : [SELECT Id, Name FROM User WHERE ProfileId=:selectedNewProfileId AND Id!=:selectedOldUserId]) {
+        for (User usr : [SELECT Id, Name FROM User 
+                WHERE ProfileId=:selectedNewProfileId AND Id!=:selectedOldUserId]) {
             userOptions.add(new SelectOption(usr.Id, usr.Name));
         }
         return userOptions;
@@ -43,8 +44,10 @@ public without sharing class OwnerChangingPageController {
         Map<String, Schema.SObjectType> globalDescribe = Schema.getGlobalDescribe();
         for (Schema.SObjectType objectType : globalDescribe.values()) {
             Schema.DescribeSObjectResult objectDescription = objectType.getDescribe();
-            if (!objectDescription.isCustom() && objectDescription.isCreateable() && objectDescription.isSearchable()) {
-                standardObjectNames.put(objectDescription.getLabel(), objectDescription.getName());
+            if (!objectDescription.isCustom() && objectDescription.isCreateable() 
+                    && objectDescription.isSearchable()) {
+                standardObjectNames.put(objectDescription.getLabel(), 
+                    objectDescription.getName());
             }
         }
         objectsLabels = new List<String> (standardObjectNames.keySet());
@@ -55,24 +58,16 @@ public without sharing class OwnerChangingPageController {
         return orgObjects;
     }
 
-    public String getNumOfObjects() {
-        if (selectedObjects == null) { 
-            return '';
-        }
-        else {
-            return selectedObjects.size().format();
-        }
-    }
-
     public void reassignOwner() {
-        if (selectedOldUserId == '') { operationResult = 'Failed. No old user ID'; return;}
-        if (selectedNewUserId == '') { operationResult = 'Failed. No new user ID'; return; }
-        if (selectedObjects == null) { operationResult = 'Failed. No objects selected'; return; }
-        if (selectedObjects.size() == 0) { operationResult = 'Failed. No objects selected'; return; }
 
         List<Database.SaveResult> resultList = new List<Database.SaveResult> ();
         Integer numberOfRecordsUpdated = 0;
         Boolean isReassignmentSuccessful = true;
+
+        if (selectedOldUserId == '') return;
+        if (selectedNewUserId == '') return;
+        if (selectedObjects == null) return;
+        if (selectedObjects.size() == 0) return;
 
         for (String objectName : selectedObjects) {
             String queryString = 

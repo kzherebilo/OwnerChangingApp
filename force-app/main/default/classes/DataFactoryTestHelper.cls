@@ -41,4 +41,16 @@ public class DataFactoryTestHelper {
         }
         return accountList;
     }
+
+    public static List<Contact> createTestContactsAsUser(User owner) {
+        List<Contact> contactList = new List<Contact> ();
+        for (Integer i = 0; i < 10; i++) {
+            String contactName = 'Test Contact ' + i;
+            contactList.add(new Contact(LastName = contactName));
+        }
+        System.runAs(owner) {
+            insert contactList;
+        }
+        return contactList;
+    }
 }

@@ -84,10 +84,6 @@
                     <apex:outputText id="SelectedObjects" value="{! selectedObjects }" />
                 </apex:pageBlockSectionItem>
                 <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Number of objects selected" />
-                    <apex:outputText value="{! numOfObjects }" />
-                </apex:pageBlockSectionItem>
-                <apex:pageBlockSectionItem>
                     <apex:outputLabel value="Operation result" />
                     <apex:outputText value="{! operationResult }" />
                 </apex:pageBlockSectionItem>
