@@ -1,5 +1,7 @@
 @isTest
 public class DataFactoryTestHelper {
+
+    public static Integer numberOfRecordsToCreate = 10;
     
     public static List<User> createTestUsers() {
         List<User> userList = new List<User> ();
@@ -32,7 +34,7 @@ public class DataFactoryTestHelper {
 
     public static List<Account> createTestAccountsAsUser(User owner) {
         List<Account> accountList = new List<Account> ();
-        for (Integer i = 0; i < 10; i++) {
+        for (Integer i = 0; i < numberOfRecordsToCreate; i++) {
             String accountName = 'Test Account ' + i;
             accountName = 'Test Account ' + accountName.hashCode().format();
             accountList.add(new Account(Name = accountName));
@@ -45,7 +47,7 @@ public class DataFactoryTestHelper {
 
     public static List<Contact> createTestContactsAsUser(User owner) {
         List<Contact> contactList = new List<Contact> ();
-        for (Integer i = 0; i < 10; i++) {
+        for (Integer i = 0; i < numberOfRecordsToCreate; i++) {
             String contactName = 'Test Contact ' + i;
             contactName = 'Test Contact ' + contactName.hashCode().format();
             contactList.add(new Contact(LastName = contactName));

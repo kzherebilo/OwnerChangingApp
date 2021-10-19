@@ -7,6 +7,7 @@ public without sharing class OwnerChangingPageController {
     public String[] selectedObjects         { get; set; }
     public String   operationResult         { get; set; }
 
+    private Id      updateJobId;
 
     public List<SelectOption> getUserProfiles() {
         List<SelectOption> profileOptions = new List<SelectOption> ();
@@ -87,4 +88,29 @@ public without sharing class OwnerChangingPageController {
             ? 'Success | Number Of Records Updated: ' + numberOfRecordsUpdated.format()
             : 'Failed';
     }
+
+    // public void updateOwner() {
+
+    //     List<Database.SaveResult> resultList = new List<Database.SaveResult> ();
+    //     Integer numberOfRecordsUpdated = 0;
+    //     Boolean isReassignmentSuccessful = true;
+
+    //     if (selectedOldUserId == '') return;
+    //     if (selectedNewUserId == '') return;
+    //     if (selectedObjects == null) return;
+    //     if (selectedObjects.size() == 0) return;
+    //     if (updateJobId != null) {
+    //         AsyncApexJob apexJob = [SELECT Status FROM AsyncApexJob
+    //             WHERE Id = :updateJobId];
+    //         if ((apexJob.Status != 'Completed') || (apexJob.Status != 'Failed')
+    //                 || (apexJob.Status != 'Aborted')) {
+    //             return;
+    //         }
+    //     }
+    //     for (String objectName : selectedObjects) {
+    //         ReassignRecord reassignRecordJob = new ReassignRecord(
+    //             selectedOldUserId, selectedNewUserId, objectName);
+    //         updateJobId = Database.executeBatch(reassignRecordJob);
+    //     }
+    // }
 }
