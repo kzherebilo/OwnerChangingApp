@@ -33,7 +33,7 @@
                             </apex:selectList>
                         </apex:pageBlockSectionItem>
                         <apex:pageBlockSectionItem>
-                            <apex:commandButton id="reassignOwner" action="{! reassignOwner }" value="Reassign" ></apex:commandButton>
+                            <apex:commandButton id="reassignOwner" action="{! updateOwner }" value="Reassign" ></apex:commandButton>
                         </apex:pageBlockSectionItem>
                     </apex:pageBlockSection> 
                 </apex:pageBlockSectionItem>

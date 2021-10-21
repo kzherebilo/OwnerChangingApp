@@ -1,13 +1,14 @@
 public without sharing class OwnerChangingPageController {
 
-    public String   selectedOldProfileId    { get; set; }
-    public String   selectedOldUserId       { get; set; }
-    public String   selectedNewProfileId    { get; set; }
-    public String   selectedNewUserId       { get; set; }
-    public String[] selectedObjects         { get; set; }
-    public String   operationResult         { get; set; }
+    public String       selectedOldProfileId    { get; set; }
+    public String       selectedOldUserId       { get; set; }
+    public String       selectedNewProfileId    { get; set; }
+    public String       selectedNewUserId       { get; set; }
+    public String[]     selectedObjects         { get; set; }
+    public String       operationResult         { get; set; }
 
-    private Id      updateJobId;
+    private Id          updateOwnerClassId;
+
 
     public List<SelectOption> getUserProfiles() {
         List<SelectOption> profileOptions = new List<SelectOption> ();
@@ -89,28 +90,25 @@ public without sharing class OwnerChangingPageController {
             : 'Failed';
     }
 
-    // public void updateOwner() {
-
-    //     List<Database.SaveResult> resultList = new List<Database.SaveResult> ();
-    //     Integer numberOfRecordsUpdated = 0;
-    //     Boolean isReassignmentSuccessful = true;
-
-    //     if (selectedOldUserId == '') return;
-    //     if (selectedNewUserId == '') return;
-    //     if (selectedObjects == null) return;
-    //     if (selectedObjects.size() == 0) return;
-    //     if (updateJobId != null) {
-    //         AsyncApexJob apexJob = [SELECT Status FROM AsyncApexJob
-    //             WHERE Id = :updateJobId];
-    //         if ((apexJob.Status != 'Completed') || (apexJob.Status != 'Failed')
-    //                 || (apexJob.Status != 'Aborted')) {
-    //             return;
-    //         }
-    //     }
-    //     for (String objectName : selectedObjects) {
-    //         ReassignRecord reassignRecordJob = new ReassignRecord(
-    //             selectedOldUserId, selectedNewUserId, objectName);
-    //         updateJobId = Database.executeBatch(reassignRecordJob);
-    //     }
-    // }
+    public void updateOwner() {
+        if (this.updateOwnerClassId == null) {
+            String updateOwnerClassName = ReassignRecord.class.getName();
+            this.updateOwnerClassId = [SELECT Id FROM ApexClass
+                WHERE Name = :updateOwnerClassName LIMIT 1].Id;
+        }
+        List<AsyncApexJob> apexJobs = [SELECT ApexClassId, Status FROM AsyncApexJob
+            WHERE ApexClassId =: this.updateOwnerClassId
+            AND Status != 'Completed' AND Status != 'Failed'];
+        operationResult = apexJobs.size().format();
+        if (!apexJobs.isEmpty()) return;
+        if (this.selectedOldUserId == '') return;
+        if (this.selectedNewUserId == '') return;
+        if (this.selectedObjects == null) return;
+        if (this.selectedObjects.size() == 0) return;
+        ReassignRecord reassignRecordJob = new ReassignRecord(
+            this.selectedOldUserId, this.selectedNewUserId, this.selectedObjects);
+        // Check for LimitException is required!!!
+        Database.executeBatch(reassignRecordJob);
+        
+    }
 }
