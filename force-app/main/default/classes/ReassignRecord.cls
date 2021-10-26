@@ -68,15 +68,16 @@ public without sharing class ReassignRecord implements
         logRec.batchJobItems = apexJob.TotalJobItems;
         logRec.batchJobErrors = apexJob.NumberOfErrors;
         this.log.add(logRec);
-        publishReport();
         this.numberOfRecordsProcessed = 0;
         this.numberOfRecordsUpdated = 0;
         this.objectNameList.remove(0);
         if (objectNameList.size() > 0) {
+            publishReport();
             Database.executeBatch(this);
         }
         else {
             emailReport();
+            publishReport();
         }
 
     }
@@ -85,6 +86,7 @@ public without sharing class ReassignRecord implements
     private void emailReport() {
 
         Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
+        LogRecord logHeadRecord = this.log[this.log.size() - 1];
         String emailHtmlBody = '';
         String emailSubject = '';
         String overallStatus = 'Completed';
@@ -114,7 +116,16 @@ public without sharing class ReassignRecord implements
         mail.setToAddresses(emailAddressList);
         mail.setSubject(emailSubject);
         mail.setHtmlBody(emailHtmlBody);
-        Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
+        try {
+            Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
+        }
+        catch (System.EmailException ex) {
+            logHeadRecord.errorType += 'MAIL';
+            logHeadRecord.errorCode += ex.getDmlType(0);
+            logHeadRecord.errorMessage += ex.getDmlMessage(0);
+            this.log.remove(this.log.size() - 1);
+            this.log.add(logHeadRecord);
+        }
     }
 
     private void publishReport() {
@@ -132,6 +143,7 @@ public without sharing class ReassignRecord implements
         );
         Database.SaveResult publishingResult = Eventbus.publish(updateOwnerEvent);
         if (!publishingResult.isSuccess()) {
+            logHeadRecord.errorType += 'EB';
             logHeadRecord.errorCode += 'EB [';
             logHeadRecord.errorMessage += 'EB [';
             for (Database.Error publishingError : publishingResult.getErrors()) {
@@ -140,9 +152,6 @@ public without sharing class ReassignRecord implements
             }
             logHeadRecord.errorCode += ']';
             logHeadRecord.errorMessage += ']';
-            logHeadRecord.errorType += 'EB';
-            this.log.remove(this.log.size() - 1);
-            this.log.add(logHeadRecord);
         }
     }
 }

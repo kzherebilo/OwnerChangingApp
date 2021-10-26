@@ -1,4 +1,6 @@
 <apex:page label="OwnerChangingPage" controller="OwnerChangingPageController" >
+    <apex:includeScript value="{! $Resource.json2_js }"/>
+
     <apex:form>
         <apex:pageBlock>
             <apex:pageBlockSection columns="3" >
@@ -9,15 +11,15 @@
                         <apex:pageBlockSectionItem>
                             <apex:outputLabel>Old user profile</apex:outputLabel>
                             <apex:selectList id="oldUserProfilePicklist" value="{! selectedOldProfileId }" multiselect="false" size="1">
-                                <apex:actionSupport event="onchange" reRender="oldUserPicklist,userInfo" />
+                                <!--<apex:actionSupport event="onchange" reRender="oldUserPicklist,userInfo" />-->
                                 <apex:selectOptions value="{! userProfiles }" ></apex:selectOptions>
                             </apex:selectList>
                         </apex:pageBlockSectionItem>
                         <apex:pageBlockSectionItem>
                             <apex:outputLabel>Old user</apex:outputLabel>
                             <apex:selectList id="oldUserPicklist" value="{! selectedOldUserId }" multiselect="false" size="1">
-                                <apex:actionSupport event="onchange" reRender="newUserPicklist,userInfo" />
-                                <apex:selectOptions value="{! oldUsers }" ></apex:selectOptions>
+                                <!--<apex:actionSupport event="onchange" reRender="newUserPicklist,userInfo" />-->
+                                <apex:selectOptions value="{! Users }" ></apex:selectOptions>
                             </apex:selectList>
                         </apex:pageBlockSectionItem>
                     </apex:pageBlockSection>
@@ -28,12 +30,12 @@
                         <apex:outputLabel>SELECT OBJECTS</apex:outputLabel>
                         <apex:pageBlockSectionItem>
                             <apex:selectList id="objectsPicklist" value="{! selectedObjects }" multiselect="true" size="5">
-                                <apex:actionSupport event="onchange" reRender="userInfo" />
+                                <!--<apex:actionSupport event="onchange" reRender="userInfo" />-->
                                 <apex:selectOptions value="{! orgObjects }"></apex:selectOptions>
                             </apex:selectList>
                         </apex:pageBlockSectionItem>
                         <apex:pageBlockSectionItem>
-                            <apex:commandButton id="reassignOwner" action="{! updateOwner }" value="Reassign" ></apex:commandButton>
+                            <apex:commandButton id="reassignOwner" action="{! updateOwner }" value="Reassign" reRender="JobMessages" onclick="UpdateNumOfObjs" ></apex:commandButton>
                         </apex:pageBlockSectionItem>
                     </apex:pageBlockSection> 
                 </apex:pageBlockSectionItem>
@@ -44,51 +46,36 @@
                         <apex:pageBlockSectionItem  >
                             <apex:outputLabel>New user profile</apex:outputLabel>
                             <apex:selectList id="newUserProfilePicklist" value="{! selectedNewProfileId }" multiselect="false" size="1">
-                                <apex:actionSupport event="onchange" reRender="newUserPicklist,userInfo" />
+                                <!--<apex:actionSupport event="onchange" reRender="newUserPicklist,userInfo" />-->
                                 <apex:selectOptions value="{! userProfiles }" ></apex:selectOptions>
                             </apex:selectList>
                         </apex:pageBlockSectionItem>
                         <apex:pageBlockSectionItem>
                             <apex:outputLabel>New user</apex:outputLabel>
                             <apex:selectList id="newUserPicklist" value="{! selectedNewUserId }" multiselect="false" size="1">
-                                <apex:actionSupport event="onchange" reRender="userInfo" />
-                                <apex:selectOptions value="{! newUsers }" ></apex:selectOptions>
+                                <!--<apex:actionSupport event="onchange" reRender="userInfo" />-->
+                                <apex:selectOptions value="{! Users }" ></apex:selectOptions>
                             </apex:selectList>
                         </apex:pageBlockSectionItem>
                     </apex:pageBlockSection>
                 </apex:pageBlockSectionItem>
-
-            </apex:pageBlockSection>
-        </apex:pageBlock>
-    
-        <apex:pageBlock id="userInfo" rendered="true" >
-            <apex:pageBlockSection columns="1" collapsible="true" >
-                <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Selected from-user profile" />
-                    <apex:outputText id="SelectedOldProfile" value="{! selectedOldProfileId }" />
-                </apex:pageBlockSectionItem>
-                <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Selected from-user" />
-                    <apex:outputText id="SelectedOldUserName" value="{! selectedOldUserId }" />
-                </apex:pageBlockSectionItem>
-                <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Selected to-user profile" />
-                    <apex:outputText id="SelectedNewProfile" value="{! selectedNewProfileId }" />
-                </apex:pageBlockSectionItem>
-                <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Selected to-user" />
-                    <apex:outputText id="SelectedNewUserName" value="{! selectedNewUserId }" />
-                </apex:pageBlockSectionItem>
-                <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Selected objects" />
-                    <apex:outputText id="SelectedObjects" value="{! selectedObjects }" />
-                </apex:pageBlockSectionItem>
-                <apex:pageBlockSectionItem>
-                    <apex:outputLabel value="Operation result" />
-                    <apex:outputText value="{! operationResult }" />
-                </apex:pageBlockSectionItem>
+                
             </apex:pageBlockSection>
         </apex:pageBlock>
 
+        <apex:actionFunction name="relayJobState" action="{! updateJobState }" reRender="JobMessages">
+            <apex:param name="JSONUpdateEventList" value="" />
+        </apex:actionFunction>
+        <apex:actionFunction name="UpdateNumOfObjs" action="{! updateNumberOfObjects }" reRender="GetNumberOfObjects"/>
+        <script id="GetNumberOfObjects" >var numberOfObjectsSelected = "{! numberOfObjectsSelected }";</script>
+
+        <apex:pageMessages id="JobMessages"></apex:pageMessages>
     </apex:form>
+    
+    <table id="UpdateLog" >
+        <script>var token = '{!$Api.Session_ID}';</script>
+        <script id="LogBufferInit" >var updateLog = '';</script>
+        <script type="text/javascript" src="{!URLFOR($Resource.cometd_zip, 'dojo/dojo.js')}" data-dojo-config="async: 1"></script>
+        <script type="text/javascript" src="{!$Resource.updatelog_js}"></script>
+    </table>
 </apex:page>

@@ -1,0 +1,8 @@
+<apex:page >
+    <script>var token = '{!$Api.Session_ID}';</script>
+    <script type="text/javascript" src="{!URLFOR($Resource.cometd_zip, 'dojo/dojo.js')}" data-dojo-config="async: 1"></script>
+    <script type="text/javascript" src="{!$Resource.updatelog_js}"></script>
+    <div id="UpdateLog">
+        <!-- <apex:pageMessage summary="test" severity="info" strength="3" /> -->
+    </div>
+</apex:page>
