@@ -15,6 +15,9 @@ public without sharing class ReassignRecord implements
         public String       errorMessage        = '';
     }
 
+    public  String                      oldOwnerName;
+    public  String                      newOwnerName;
+    public  Boolean                     enableEmails;
     private String                      oldOwnerId;
     private String                      newOwnerId;
     private List<String>                objectNameList;
@@ -28,6 +31,9 @@ public without sharing class ReassignRecord implements
         this.oldOwnerId = oldOwnerId;
         this.newOwnerId = newOwnerId;
         this.objectNameList = objectNameList;
+        this.oldOwnerName = '';
+        this.newOwnerName = '';
+        this.enableEmails = false;
     }
 
     public Database.QueryLocator start(Database.BatchableContext context) {
@@ -71,7 +77,7 @@ public without sharing class ReassignRecord implements
         this.numberOfRecordsProcessed = 0;
         this.numberOfRecordsUpdated = 0;
         this.objectNameList.remove(0);
-        if (objectNameList.size() > 0) {
+        if (this.objectNameList.size() > 0) {
             publishReport();
             Database.executeBatch(this);
         }
@@ -85,6 +91,7 @@ public without sharing class ReassignRecord implements
 
     private void emailReport() {
 
+        if (!this.enableEmails) return;
         Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
         LogRecord logHeadRecord = this.log[this.log.size() - 1];
         String emailHtmlBody = '';
@@ -132,6 +139,8 @@ public without sharing class ReassignRecord implements
         if (this.log.isEmpty()) return;
         LogRecord logHeadRecord = this.log[this.log.size() - 1];
         Update_Owner_Event__e updateOwnerEvent = new Update_Owner_Event__e (
+            oldOwnerName__c = this.oldOwnerName,
+            newOwnerName__c = this.newOwnerName,
             jobId__c = logHeadRecord.jobId,
             jobStatus__c = logHeadRecord.jobStatus,
             objectName__c = logHeadRecord.objectName,
@@ -141,6 +150,9 @@ public without sharing class ReassignRecord implements
             errorType__c = logHeadRecord.errorType,
             errorMessage__c = logHeadRecord.errorMessage
         );
+        if (this.objectNameList.size() == 0) {
+            updateOwnerEvent.jobStatus__c += 'Final';
+        }
         Database.SaveResult publishingResult = Eventbus.publish(updateOwnerEvent);
         if (!publishingResult.isSuccess()) {
             logHeadRecord.errorType += 'EB';

@@ -1,86 +1,84 @@
 public without sharing class OwnerChangingPageController {
 
-    public String       selectedOldProfileId    { get; set; }
-    public String       selectedOldUserId       { get; set; }
-    public String       selectedNewProfileId    { get; set; }
-    public String       selectedNewUserId       { get; set; }
+    // Public properties
+    public String       selectedOldOwnerName    { get; set; }
+    public String       selectedNewOwnerName    { get; set; }
     public String[]     selectedObjects         { get; set; }
-    public String       operationResult         { get; set; }
-    public String       numberOfObjectsSelected { get; set; }    
+    public String[]     objectsToUpdate         { get; set; }
+    public String       userSuggestionList      {
+        get {
+            String suggestions = '';
+            if (this.userOptionMap.isEmpty()) this.getUsers();
+            for (String userName : this.userOptionMap.values()) {
+                suggestions += userName + ',';
+            }
+            return suggestions;
+        }
+    }
+    //
+    // Private properties
+    private Map<Id, String> userOptionMap       = new Map<Id, String> ();
+    private List<SelectOption> orgObjects       = new List<SelectOption> ();
+    private List<SelectOption> userObjects      = new List<SelectOption> ();
     private Id          updateOwnerClassId;
-    private String      logBuffer = '';
-    
-
-    private String      selectedOldUserName  {
+    private String      logBuffer               = '';
+    private String      verifiedOldOwnerName    {
         get {
-            for (SelectOption userOption : this.userOptionList) {
-                if (userOption.getValue() == selectedOldUserId) {
-                    return userOption.getLabel();
+            if (this.userOptionMap.values().contains(this.selectedOldOwnerName)) {
+                return this.selectedOldOwnerName;
+            }
+            return '';
+        }
+    }
+    private String      verifiedNewOwnerName    {
+        get {
+            if (this.userOptionMap.values().contains(this.selectedNewOwnerName)) {
+                return this.selectedNewOwnerName;
+            }
+            return ''; 
+        }
+    }
+    private String      verifiedOldOwnerId      {
+        get {
+            for (Id userId : this.userOptionMap.keySet()) {
+                if (this.userOptionMap.get(userId) == verifiedOldOwnerName) {
+                    return (String) userId;
                 }
             }
             return '';
         }
     }
-    private String      selectedNewUserName {
+    private String      verifiedNewOwnerId      {
         get {
-            for (SelectOption userOption : this.userOptionList) {
-                if (userOption.getValue() == selectedNewUserId) {
-                    return userOption.getLabel();
+            for (Id userId : this.userOptionMap.keySet()) {
+                if (this.userOptionMap.get(userId) == verifiedNewOwnerName) {
+                    return (String) userId;
                 }
             }
             return '';
         }
     }
-    private List<SelectOption> userOptionList = new List<SelectOption> ();
 
+/**************************************************************************************************/
+/**************************************************************************************************/
 
-    public void updateNumberOfObjects() {
-        if (this.selectedObjects == null) {
-            numberOfObjectsSelected = '0';
-        }
-        else {
-            numberOfObjectsSelected = selectedObjects.size().format();
-        }
-    }
-    
-    public List<SelectOption> getUserProfiles() {
-        List<SelectOption> profileOptions = new List<SelectOption> ();
-        profileOptions.add(new SelectOption('', '--None--'));
-        for (Profile userProfile : [SELECT Id, Name FROM Profile ORDER BY Name ASC]) {
-            profileOptions.add(new SelectOption(userProfile.Id, userProfile.Name));
-        }
-        return profileOptions;
-    }
-
-    public List<SelectOption> getUsers() {
-        userOptionList.add(new SelectOption('', '--None--'));
+    // Methods
+    public Map<Id, String> getUsers() {
         for (User usr : [SELECT Id, Name FROM User]) {
-            userOptionList.add(new SelectOption(usr.Id, usr.Name));
+            this.userOptionMap.put(usr.Id, usr.Name);
         }
-        return userOptionList;
-    }
-
-    public List<SelectOption> getOldUsers() {
-        List<SelectOption> userOptions = new List<SelectOption> ();
-        userOptions.add(new SelectOption('', '--None--'));
-        for (User usr : [SELECT Id, Name FROM User WHERE ProfileId=:selectedOldProfileId]) {
-            userOptions.add(new SelectOption(usr.Id, usr.Name));
-        }
-        return userOptions;
-    }
-
-    public List<SelectOption> getNewUsers() {
-        List<SelectOption> userOptions = new List<SelectOption> ();
-        userOptions.add(new SelectOption('', '--None--'));
-        for (User usr : [SELECT Id, Name FROM User 
-                WHERE ProfileId=:selectedNewProfileId AND Id!=:selectedOldUserId]) {
-            userOptions.add(new SelectOption(usr.Id, usr.Name));
-        }
-        return userOptions;
+        return this.userOptionMap;
     }
 
     public List<SelectOption> getOrgObjects() {
-        List<SelectOption> orgObjects = new List<SelectOption> ();
+        if (!this.orgObjects.isEmpty()) {
+            return this.orgObjects;
+        }
+        if (this.orgObjects.isEmpty() && !this.userObjects.isEmpty()) {
+            List<SelectOption> objectsEmptyList = new List<SelectOption> ();
+            objectsEmptyList.add(new SelectOption('', '---------- None ----------'));
+            return objectsEmptyList;
+        }
         List<String> objectsLabels;
         Map<String, String> standardObjectNames = new Map<String, String> ();
         // Map<String, String> customObjectNames = new Map<String, String> ();
@@ -96,40 +94,49 @@ public without sharing class OwnerChangingPageController {
         objectsLabels = new List<String> (standardObjectNames.keySet());
         objectsLabels.sort();
         for (String objectLabel : objectsLabels) {
-            orgObjects.add(new SelectOption(standardObjectNames.get(
+            this.orgObjects.add(new SelectOption(standardObjectNames.get(
                 objectLabel), objectLabel));
         }
-        return orgObjects;
+        return this.orgObjects;
     }
 
-    public void reassignOwner() {
-
-        List<Database.SaveResult> resultList = new List<Database.SaveResult> ();
-        Integer numberOfRecordsUpdated = 0;
-        Boolean isReassignmentSuccessful = true;
-
-        if (selectedOldUserId == '') return;
-        if (selectedNewUserId == '') return;
-        if (selectedObjects == null) return;
-        if (selectedObjects.size() == 0) return;
-
-        for (String objectName : selectedObjects) {
-            String queryString = 
-                'SELECT OwnerId FROM '
-                + objectName
-                + ' WHERE OwnerId=:selectedOldUserId';
-            List<SObject> records = Database.query(queryString);
-            resultList = OwnerChangingHelper.changeOwner(records, selectedNewUserId);
-            for (Database.SaveResult result : resultList) {
-                isReassignmentSuccessful = result.isSuccess();
-                if (!result.isSuccess()) break;
-            }
-            if (!isReassignmentSuccessful) break;
-            numberOfRecordsUpdated += resultList.size();
+    public List<SelectOption> getUserDefinedObjects() {
+        if (this.userObjects.isEmpty()) {
+            List<SelectOption> objectsEmptyList = new List<SelectOption> ();
+            objectsEmptyList.add(new SelectOption('', '---------- None ----------'));
+            return objectsEmptyList;
         }
-        operationResult = isReassignmentSuccessful
-            ? 'Success | Number Of Records Updated: ' + numberOfRecordsUpdated.format()
-            : 'Failed';
+        return this.userObjects;
+    }
+
+    public void addObjectsToList() {
+        Integer objectIndex;
+        if (this.selectedObjects.isEmpty()) return;
+        for (String objectName : this.selectedObjects) {
+            for (SelectOption objectOption : this.orgObjects) {
+                if (objectOption.getValue() == objectName) {
+                    this.userObjects.add(objectOption);
+                    objectIndex = this.orgObjects.indexOf(objectOption);
+                    break;
+                }
+            }
+            this.orgObjects.remove(objectIndex);
+        }
+    }
+
+    public void removeObjectsFromList() {
+        Integer objectIndex;
+        if (this.objectsToUpdate.isEmpty()) return;
+        for (String objectName : this.objectsToUpdate) {
+            for (SelectOption objectOption : this.userObjects) {
+                if (objectOption.getValue() == objectName) {
+                    this.orgObjects.add(objectOption);
+                    objectIndex = this.userObjects.indexOf(objectOption);
+                    break;
+                }
+            }
+            this.userObjects.remove(objectIndex);
+        }
     }
 
     public void updateOwner() {
@@ -159,19 +166,19 @@ public without sharing class OwnerChangingPageController {
         }
         // A series of trivial checks of user input
         logMsgSeverity = ApexPages.Severity.WARNING;
-        if (String.isBlank(this.selectedOldUserId)) {
+        if (String.isBlank(this.verifiedOldOwnerName)) {
             logMessage = '"From"-user field is required! '
                 + 'Please select a user whose ownership to be revoked';
             ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
             return;
         }
-        if (String.isBlank(this.selectedNewUserId)) {
+        if (String.isBlank(this.verifiedNewOwnerName)) {
             logMessage = '"To"-user field is required! '
                 + 'Please select a new owner of the records';
             ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
             return;
         }
-        if (this.selectedOldUserId == this.selectedNewUserId) {
+        if (this.verifiedOldOwnerName == this.verifiedNewOwnerName) {
             logMessage = 'Current and new owner are identical! '
                 + 'Reassignment is pointless! Select different users';
             ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
@@ -190,7 +197,10 @@ public without sharing class OwnerChangingPageController {
         ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
 
         ReassignRecord reassignRecordJob = new ReassignRecord(
-            this.selectedOldUserId, this.selectedNewUserId, this.selectedObjects);
+            this.verifiedOldOwnerId, this.verifiedNewOwnerId, this.selectedObjects);
+        reassignRecordJob.oldOwnerName = verifiedOldOwnerName;
+        reassignRecordJob.newOwnerName = verifiedNewOwnerName;
+        reassignRecordJob.enableEmails = false;
         // Check for LimitException is required!!!
         Database.executeBatch(reassignRecordJob);
     }
@@ -205,12 +215,12 @@ public without sharing class OwnerChangingPageController {
             JSONParser parser = JSON.createParser(JSONEvent);
             updateEvent = (Update_Owner_Event__e) parser.readValueAs(
                 Update_Owner_Event__e.class);
-            if (updateEvent.jobStatus__c == 'Completed') {
+            if (updateEvent.jobStatus__c.contains('Completed')) {
                 logMsgSeverity = ApexPages.Severity.CONFIRM;
-                logMessage = selectedOldUserName.toUpperCase() + ' >>> ' 
-                    + selectedNewUserName.toUpperCase() + ' | '
-                    + updateEvent.objectName__c + ' records updated: '
-                    + Integer.valueOf(updateEvent.recordsUpdated__c) + ' records in total';
+                logMessage = updateEvent.oldOwnerName__c.toUpperCase() + ' >>> '
+                    + updateEvent.newOwnerName__c.toUpperCase() + ' | '
+                    + Integer.valueOf(updateEvent.recordsUpdated__c)
+                    + updateEvent.objectName__c + ' records updated';
                 ApexPages.addMessage(new ApexPages.Message(
                     logMsgSeverity, logMessage));
             }
