@@ -18,6 +18,9 @@ private class ReassignRecordTest {
         Test.startTest();
         ReassignRecord reassignJob = new ReassignRecord(oldOwner.Id,
             newOwner.Id, new List<String> {'Account'});
+        reassignJob.oldOwnerName = oldOwner.Name;
+        reassignJob.newOwnerName = newOwner.Name;
+        reassignJob.enableEmails = true;
         Id batchId = Database.executeBatch(reassignJob);
         Test.stopTest();
         groupedResults = [SELECT COUNT(Id) numberOfRecords
@@ -31,6 +34,8 @@ private class ReassignRecordTest {
         System.debug('Batch apex job => NUMBER_OF_ERRORS: ' + apexJob.NumberOfErrors);
         System.debug('Batch apex job => BATCHES_PROCESSED: ' + apexJob.JobItemsProcessed);
         System.debug('Batch apex job => NUMBER_OF_BATCHES: ' + apexJob.TotalJobItems);
+        //Integer emailInvocations = Limits.getEmailInvocations();
+        //System.assertEquals(1, emailInvocations,'Email has been sent');
     }
 
 }

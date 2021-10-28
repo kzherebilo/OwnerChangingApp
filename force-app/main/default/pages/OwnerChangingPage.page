@@ -4,7 +4,6 @@
     <script id="LogBufferInit" >var updateLog = '';</script>
     <script type="text/javascript" src="{!URLFOR($Resource.cometd_zip, 'dojo/dojo.js')}" data-dojo-config="async: 1"></script>
     <script type="text/javascript" src="{!$Resource.updatelog_js}"></script>
-
     <apex:form> 
         <apex:actionFunction name="relayJobState" action="{! updateJobState }" reRender="JobMessages">
             <apex:param name="JSONUpdateEventList" value="" />
@@ -17,7 +16,7 @@
                         <apex:outputLabel>FROM USER</apex:outputLabel>
                         <apex:pageBlockSectionItem>
                             <apex:outputLabel>Current owner</apex:outputLabel>
-                            <apex:inputText id="OldOwnerSearchBar" value="{! selectedOldOwnerName }" html-placeholder="User name" list="{! userSuggestionList }" ></apex:inputText>
+                            <apex:inputText style="width:80%" id="OldOwnerSearchBar" value="{! selectedOldOwnerName }" html-placeholder="User name" list="{! userSuggestionList }" ></apex:inputText>
                         </apex:pageBlockSectionItem>
                     </apex:pageBlockSection>
                 </apex:pageBlockSectionItem>
@@ -27,12 +26,12 @@
                         <apex:outputLabel>SELECT OBJECTS</apex:outputLabel>
                         <apex:pageBlockSectionItem>
                             <apex:pageBlockSection columns="3">
-                                <apex:pageBlockSectionItem>
-                                    <apex:selectList id="ObjectsPicklist" value="{! selectedObjects }" multiselect="true" size="7" html-width="100" >
+                                <apex:pageBlockSectionItem dataStyle="width:35%" labelStyle="width:0%">
+                                    <apex:selectList style="width:100%" id="ObjectsPicklist" value="{! selectedObjects }" multiselect="true" size="7" html-width="100" >
                                         <apex:selectOptions value="{! orgObjects }"></apex:selectOptions>
                                     </apex:selectList>
                                 </apex:pageBlockSectionItem>
-                                <apex:pageBlockSectionItem>
+                                <apex:pageBlockSectionItem dataStyle="width:5%; vertical-align:middle;" labelStyle="width:0%">
                                     <apex:pageBlockSection columns="1">
                                         <apex:pageBlockSectionItem>
                                             <apex:commandButton id="AddObject" action="{! addObjectsToList }" value=">>" reRender="ObjectsPicklist,ObjectsToProcess" ></apex:commandButton>
@@ -43,15 +42,22 @@
                                     </apex:pageBlockSection>
                                 </apex:pageBlockSectionItem>
                                 <apex:pageBlockSectionItem>
-                                    <apex:selectList id="ObjectsToProcess" value="{! objectsToUpdate }" multiselect="true" size="7" html-width="100" >
+                                    <apex:selectList style="width:100%" id="ObjectsToProcess" value="{! objectsToUpdate }" multiselect="true" size="7" html-width="100" >
                                         <apex:selectOptions value="{! userDefinedObjects }"></apex:selectOptions>
                                     </apex:selectList>
                                 </apex:pageBlockSectionItem>
                             </apex:pageBlockSection>
                         </apex:pageBlockSectionItem>
-                        <apex:pageBlockSectionItem>
-                            <apex:commandButton id="reassignOwner" action="{! updateOwner }" value="Reassign" reRender="JobMessages" ></apex:commandButton>
-                        </apex:pageBlockSectionItem>
+                        
+                        <apex:pageBlockSection>
+                            <apex:pageBlockSectionItem>
+                                <apex:commandButton id="reassignOwner" action="{! updateOwner }" value="Reassign" reRender="JobMessages" ></apex:commandButton>
+                            </apex:pageBlockSectionItem>
+                            <apex:pageBlockSectionItem>
+                                <apex:inputCheckbox value="{! enableEmails }">Email notifications</apex:inputCheckbox>
+                            </apex:pageBlockSectionItem>
+                        </apex:pageBlockSection>
+                        
                     </apex:pageBlockSection> 
                 </apex:pageBlockSectionItem>
 
@@ -61,7 +67,7 @@
                         <apex:outputLabel>TO USER</apex:outputLabel>
                         <apex:pageBlockSectionItem>
                             <apex:outputLabel>New owner</apex:outputLabel>
-                            <apex:inputText id="NewOwnerSearchBar" value="{! selectedNewOwnerName }" html-placeholder="User name" list="{! userSuggestionList }" ></apex:inputText>
+                            <apex:inputText style="width:80%" id="NewOwnerSearchBar" value="{! selectedNewOwnerName }" html-placeholder="User name" list="{! userSuggestionList }" ></apex:inputText>
                         </apex:pageBlockSectionItem>
                     </apex:pageBlockSection>
                 </apex:pageBlockSectionItem>

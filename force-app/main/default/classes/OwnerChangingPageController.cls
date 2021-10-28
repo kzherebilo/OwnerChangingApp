@@ -5,6 +5,7 @@ public without sharing class OwnerChangingPageController {
     public String       selectedNewOwnerName    { get; set; }
     public String[]     selectedObjects         { get; set; }
     public String[]     objectsToUpdate         { get; set; }
+    public Boolean      enableEmails            { get; set; }
     public String       userSuggestionList      {
         get {
             String suggestions = '';
@@ -15,13 +16,20 @@ public without sharing class OwnerChangingPageController {
             return suggestions;
         }
     }
+    public List<SelectOption> orgObjects        = new List<SelectOption> ();
+    public List<SelectOption> userObjects       = new List<SelectOption> ();
+
     //
     // Private properties
+    private final List<String> objectFilter     = new List<String> {
+        'Account',
+        'Opportunity',
+        'Lead',
+        'Contact'
+    };
     private Map<Id, String> userOptionMap       = new Map<Id, String> ();
-    private List<SelectOption> orgObjects       = new List<SelectOption> ();
-    private List<SelectOption> userObjects      = new List<SelectOption> ();
     private Id          updateOwnerClassId;
-    private String      logBuffer               = '';
+    private String      eventBuffer             = '';
     private String      verifiedOldOwnerName    {
         get {
             if (this.userOptionMap.values().contains(this.selectedOldOwnerName)) {
@@ -58,6 +66,24 @@ public without sharing class OwnerChangingPageController {
             return '';
         }
     }
+    private List<String> verifiedObjectList     {
+        get {
+            List<String> objectNameList = new List<string> ();
+            for (SelectOption option : userObjects) {
+                objectNameList.add(option.getValue());
+            }
+            return objectNameList;
+        }
+    }
+    private List<SelectOption> emptyPickList    {
+        get {
+            List<SelectOption> objectsEmptyList = new List<SelectOption> ();
+            SelectOption emptyOption = new SelectOption('', '-- None --');
+            emptyOption.setDisabled(true);
+            objectsEmptyList.add(emptyOption);
+            return objectsEmptyList;
+        }
+    }
 
 /**************************************************************************************************/
 /**************************************************************************************************/
@@ -75,68 +101,74 @@ public without sharing class OwnerChangingPageController {
             return this.orgObjects;
         }
         if (this.orgObjects.isEmpty() && !this.userObjects.isEmpty()) {
-            List<SelectOption> objectsEmptyList = new List<SelectOption> ();
-            objectsEmptyList.add(new SelectOption('', '---------- None ----------'));
-            return objectsEmptyList;
+            return emptyPickList;
         }
         List<String> objectsLabels;
-        Map<String, String> standardObjectNames = new Map<String, String> ();
-        // Map<String, String> customObjectNames = new Map<String, String> ();
         Map<String, Schema.SObjectType> globalDescribe = Schema.getGlobalDescribe();
         for (Schema.SObjectType objectType : globalDescribe.values()) {
-            Schema.DescribeSObjectResult objectDescription = objectType.getDescribe();
-            if (!objectDescription.isCustom() && objectDescription.isCreateable() 
-                    && objectDescription.isSearchable()) {
-                standardObjectNames.put(objectDescription.getLabel(), 
-                    objectDescription.getName());
+            Schema.DescribeSObjectResult objectDescription
+                = objectType.getDescribe();
+            Map<String, Schema.SObjectField> objectFieldMap
+                = objectDescription.fields.getMap();
+            Boolean objectQualifies = true
+                && this.objectFilter.contains(objectDescription.getName());
+                //&& objectDescription.isSearchable();
+                //&& objectDescription.isCreateable();
+                //|| objectDescription.isCustom();
+            if (!objectQualifies) continue;
+            Boolean fieldQualifies = true;
+            // for (Schema.SObjectField objectField : objectFieldMap.values()) {
+            //     fieldQualifies = objectField.getDescribe().getName() == 'OwnerId';
+            //     if (fieldQualifies) break;
+            // }
+            if (fieldQualifies) {
+                this.orgObjects.add(new SelectOption(objectDescription.getName(),
+                    objectDescription.getLabel()));
+                // standardObjectNames.put(objectDescription.getLabel(), 
+                //     objectDescription.getName());
             }
         }
-        objectsLabels = new List<String> (standardObjectNames.keySet());
-        objectsLabels.sort();
-        for (String objectLabel : objectsLabels) {
-            this.orgObjects.add(new SelectOption(standardObjectNames.get(
-                objectLabel), objectLabel));
-        }
+        this.orgObjects.sort();
         return this.orgObjects;
     }
 
     public List<SelectOption> getUserDefinedObjects() {
-        if (this.userObjects.isEmpty()) {
-            List<SelectOption> objectsEmptyList = new List<SelectOption> ();
-            objectsEmptyList.add(new SelectOption('', '---------- None ----------'));
-            return objectsEmptyList;
-        }
+        if (this.userObjects.isEmpty()) return emptyPickList;
         return this.userObjects;
     }
 
     public void addObjectsToList() {
-        Integer objectIndex;
+        List<SelectOption> tempObjectList = new List<SelectOption> ();
         if (this.selectedObjects.isEmpty()) return;
-        for (String objectName : this.selectedObjects) {
-            for (SelectOption objectOption : this.orgObjects) {
-                if (objectOption.getValue() == objectName) {
-                    this.userObjects.add(objectOption);
-                    objectIndex = this.orgObjects.indexOf(objectOption);
-                    break;
-                }
+        for (SelectOption objectOption : this.orgObjects) {
+            if (this.selectedObjects.contains(objectOption.getValue())) {
+                this.userObjects.add(objectOption);
             }
-            this.orgObjects.remove(objectIndex);
+            else {
+                tempObjectList.add(objectOption);
+            }
         }
+        this.orgObjects.clear();
+        this.orgObjects.addAll(tempObjectList);
+        this.userObjects.sort();
+        this.orgObjects.sort();
     }
 
     public void removeObjectsFromList() {
-        Integer objectIndex;
+        List<SelectOption> tempObjectList = new List<SelectOption> ();
         if (this.objectsToUpdate.isEmpty()) return;
-        for (String objectName : this.objectsToUpdate) {
-            for (SelectOption objectOption : this.userObjects) {
-                if (objectOption.getValue() == objectName) {
-                    this.orgObjects.add(objectOption);
-                    objectIndex = this.userObjects.indexOf(objectOption);
-                    break;
-                }
+        for (SelectOption objectOption : this.userObjects) {
+            if (this.objectsToUpdate.contains(objectOption.getValue())) {
+                this.orgObjects.add(objectOption);
             }
-            this.userObjects.remove(objectIndex);
+            else {
+                tempObjectList.add(objectOption);
+            }
         }
+        this.userObjects.clear();
+        this.userObjects.addAll(tempObjectList);
+        this.userObjects.sort();
+        this.orgObjects.sort();
     }
 
     public void updateOwner() {
@@ -184,7 +216,7 @@ public without sharing class OwnerChangingPageController {
             ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
             return;
         }
-        if ((this.selectedObjects == null) || (this.selectedObjects.size() == 0)) {
+        if (this.verifiedObjectList.isEmpty()) {
             logMessage = 'No object type is selected! '
                 + 'Please specify object types, such as Accounts or Leads; the '
                 + 'owner of the records belonging to each of the selected type '
@@ -197,30 +229,35 @@ public without sharing class OwnerChangingPageController {
         ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
 
         ReassignRecord reassignRecordJob = new ReassignRecord(
-            this.verifiedOldOwnerId, this.verifiedNewOwnerId, this.selectedObjects);
+            this.verifiedOldOwnerId, this.verifiedNewOwnerId, this.verifiedObjectList);
         reassignRecordJob.oldOwnerName = verifiedOldOwnerName;
         reassignRecordJob.newOwnerName = verifiedNewOwnerName;
-        reassignRecordJob.enableEmails = false;
+        reassignRecordJob.enableEmails = enableEmails;
         // Check for LimitException is required!!!
         Database.executeBatch(reassignRecordJob);
     }
 
 
     public void updateJobState() {
+        this.eventBuffer = ApexPages.currentPage().getParameters().get(
+            'JSONUpdateEventList');
+        this.postMessage(this.eventBuffer, 'END_OF_MSG');
+    }
+
+    public void postMessage(String events, String delimiter) {
         Update_Owner_Event__e updateEvent = new Update_Owner_Event__e ();
         String logMessage = '';
         ApexPages.Severity logMsgSeverity = ApexPages.Severity.CONFIRM;
-        logBuffer = ApexPages.currentPage().getParameters().get('JSONUpdateEventList');
-        for (String JSONEvent : logBuffer.split('END_OF_MSG')) {
-            JSONParser parser = JSON.createParser(JSONEvent);
+        for (String event : events.split(delimiter)) {
+            JSONParser parser = JSON.createParser(event);
             updateEvent = (Update_Owner_Event__e) parser.readValueAs(
                 Update_Owner_Event__e.class);
             if (updateEvent.jobStatus__c.contains('Completed')) {
                 logMsgSeverity = ApexPages.Severity.CONFIRM;
                 logMessage = updateEvent.oldOwnerName__c.toUpperCase() + ' >>> '
                     + updateEvent.newOwnerName__c.toUpperCase() + ' | '
-                    + Integer.valueOf(updateEvent.recordsUpdated__c)
-                    + updateEvent.objectName__c + ' records updated';
+                    + 'Number of ' + updateEvent.objectName__c + ' records ' 
+                    + 'updated:  ' + Integer.valueOf(updateEvent.recordsUpdated__c);
                 ApexPages.addMessage(new ApexPages.Message(
                     logMsgSeverity, logMessage));
             }
@@ -235,7 +272,6 @@ public without sharing class OwnerChangingPageController {
                     logMsgSeverity, logMessage));
                 continue;
             }
-
             logMsgSeverity = ApexPages.Severity.WARNING;
             if (!String.isBlank(updateEvent.errorType__c)) {
                 if (updateEvent.errorType__c.contains('MAIL')) {

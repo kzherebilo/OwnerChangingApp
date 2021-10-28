@@ -1,71 +1,79 @@
 @IsTest
 private class OwnerChangingPageControllerTest {
 
-    // @isTest
-    // static void getUserProfilesTest() {
-    //     OwnerChangingPageController pageController = new OwnerChangingPageController();
-    //     List<SelectOption> profileList = pageController.getUserProfiles();
-    //     System.assert(profileList.size() > 0);
-    // }
+    @isTest
+    static void reassignOwnerSingleObjectTest() {
+        AggregateResult[] groupedResults = new List<AggregateResult> ();
+        OwnerChangingPageController pageController = new OwnerChangingPageController();
+        pageController.selectedObjects = new List<String>();
+        List<User> userList = DataFactoryTestHelper.createTestUsers();
+        userList = [SELECT Id, Name FROM User WHERE Id =:userList[0].Id OR Id=:userList[1].Id];
+        List<Account> recordList= DataFactoryTestHelper.createTestAccountsAsUser(userList[0]);
+        pageController.getUsers();
+        pageController.getOrgObjects();
+        System.assert(pageController.userSuggestionList.contains(userList[0].Name));
+        System.assert(pageController.userSuggestionList.contains(userList[1].Name));
+        System.debug('Suggestions list is filled out correctly');
+        pageController.userObjects.addAll(pageController.orgObjects);
+        pageController.selectedOldOwnerName = userList[0].Name;
+        pageController.selectedNewOwnerName = userList[1].Name;
+        pageController.enableEmails = true;
+        System.assertEquals(pageController.userObjects, pageController.getUserDefinedObjects());
+        Test.startTest();
+        pageController.updateOwner();
+        Test.stopTest();
+        groupedResults = [SELECT COUNT(Id) numberOfRecords
+            FROM Account WHERE OwnerId=:userList[1].Id];
+        System.assertEquals(recordList.size(), 
+            groupedResults[0].get('numberOfRecords'));
+        System.debug('Update is successful');
+        List<ApexPages.Message> messages = ApexPages.getMessages();
+        System.debug(messages.size());
+        System.debug(messages[0].getSummary());
+    }
 
-    // @isTest
-    // static void getOldUsersTest() {
-    //     OwnerChangingPageController pageController = new OwnerChangingPageController();
-    //     List<User> userList = DataFactoryTestHelper.createTestUsers();
-    //     System.assert(userList.size() > 0, 'Failed to obtain a list of test users');
-    //     pageController.selectedOldProfileId = userList[0].ProfileId;
-    //     List<SelectOption> oldUserList = pageController.getOldUsers();
-    //     for (SelectOption userOption : oldUserList) {
-    //         if (userOption.getValue() == (String) userList[0].Id) {
-    //             System.assert(true);
-    //             return;
-    //         }
-    //     }
-    //     System.assert(false);
-    // }
+    @isTest
+    static void postMessageTest() {
+        String eventBuffer = '';
+        String eventMsgDelimiter = 'END_OF_MSG';
+        System.JSONGenerator JSONGen = JSON.createGenerator(true);
+        OwnerChangingPageController pageController = new OwnerChangingPageController();
+        Update_Owner_Event__e updateEvent = new Update_Owner_Event__e ();
+        updateEvent.jobStatus__c = 'Completed';
+        updateEvent.jobId__c = '';
+        updateEvent.errorCode__c = '';
+        updateEvent.errorMessage__c = '';
+        updateEvent.errorType__c = 'MAIL';
+        updateEvent.recordsProcessed__c = 3;
+        updateEvent.recordsUpdated__c = 3;
+        updateEvent.newOwnerName__c = 'user 2';
+        updateEvent.oldOwnerName__c = 'user 1';
+        updateEvent.objectName__c = 'Account';
+        JSONGen.writeObject(updateEvent);
+        eventBuffer += JSONGen.getAsString() + eventMsgDelimiter;
+        JSONGen = JSON.createGenerator(true);
+        updateEvent.jobStatus__c = 'Failed';
+        updateEvent.objectName__c = 'Contact';
+        JSONGen.writeObject(updateEvent);
+        eventBuffer += JSONGen.getAsString() + eventMsgDelimiter;
+        System.debug('Generated JSON event: ' + eventBuffer);
+        pageController.postMessage(eventBuffer, eventMsgDelimiter);
+        List<ApexPages.Message> messages = ApexPages.getMessages();
+        System.assertEquals(3, messages.size());
+        System.debug(messages.size() + 'has been poseted');
+        System.assertEquals(messages[0].getSeverity(), ApexPages.Severity.CONFIRM);
+        System.debug('Message severity level: ' + messages[0].getSeverity());
+        System.debug('Message summary: ' + messages[0].getSummary());
 
-    // @isTest
-    // static void getNewUsersTest() {
-    //     Boolean isTestUserInPicklist = false;
-    //     Boolean isOldUserInPicklist = false;
-    //     OwnerChangingPageController pageController = new OwnerChangingPageController();
-    //     List<User> userList = DataFactoryTestHelper.createTestUsers();
-    //     pageController.selectedOldUserId = userList[0].Id;
-    //     pageController.selectedNewProfileId = userList[1].ProfileId;
-    //     List<SelectOption> newUserList = pageController.getNewUsers();
-    //     for (SelectOption userOption : newUserList) {
-    //         if (!isTestUserInPicklist) {
-    //             isTestUserInPicklist = (userOption.getValue() == (String) userList[1].Id);
-    //         }
-    //         if (!isOldUserInPicklist) {
-    //             isOldUserInPicklist = (userOption.getValue() == (String) userList[0].Id);
-    //         }
-    //     }
-    //     System.assert(isTestUserInPicklist && !isOldUserInPicklist);
-    // }
+        System.assertEquals(messages[1].getSeverity(), ApexPages.Severity.WARNING);
+        System.debug('Message severity level: ' + messages[1].getSeverity());
+        System.debug('Message summary: ' + messages[1].getSummary());
 
-    // @isTest
-    // static void getOrgObjects() {
-    //     OwnerChangingPageController pageController = new OwnerChangingPageController();
-    //     List<SelectOption> objectList = pageController.getOrgObjects();
-    //     System.assert(objectList.size() > 0);
-    // }
+        System.assertEquals(messages[2].getSeverity(), ApexPages.Severity.ERROR);
+        System.debug('Message severity level: ' + messages[2].getSeverity());
+        System.debug('Message summary: ' + messages[2].getSummary());
 
-    // @isTest
-    // static void reassignOwnerSingleObjectTest() {
-    //     OwnerChangingPageController pageController = new OwnerChangingPageController();
-    //     pageController.selectedObjects = new List<String>();
-    //     List<User> userList = DataFactoryTestHelper.createTestUsers();
-    //     List<Account> recordList= DataFactoryTestHelper.createTestAccountsAsUser(userList[0]);
-    //     pageController.selectedOldUserId = (String) userList[0].Id;
-    //     pageController.selectedNewUserId = (String) userList[1].Id;
-    //     pageController.selectedObjects.add(
-    //         recordList[0].Id.getSobjectType().getDescribe().getName());
-    //     pageController.reassignOwner();
-    //     String operationResult = 'Success | Number Of Records Updated: '
-    //         + recordList.size();
-    //     System.assertEquals(operationResult, pageController.operationResult);
-    // }
+    }
 
     // @isTest
     // static void reassignOwnerMultipleObjectTest() {

@@ -93,14 +93,15 @@ public without sharing class ReassignRecord implements
 
         if (!this.enableEmails) return;
         Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
-        LogRecord logHeadRecord = this.log[this.log.size() - 1];
+        LogRecord logHeadRecord = new LogRecord();
+        if (!this.log.isEmpty()) logHeadRecord = this.log[this.log.size() - 1];
         String emailHtmlBody = '';
         String emailSubject = '';
         String overallStatus = 'Completed';
 
         emailHtmlBody = emailHtmlBody
-            + '<tr><td>Old record owner ID</td><td>: ' + oldOwnerId +'</td></tr>\n'
-            + '<tr><td>New record owner ID</td><td>: ' + newOwnerId +'</td></tr>\n'
+            + '<tr><td>Old record owner</td><td>: ' + this.oldOwnerName +'</td></tr>\n'
+            + '<tr><td>New record owner</td><td>: ' + this.newOwnerName +'</td></tr>\n'
             + '<br/><br/>\n';
         for (LogRecord logRec : log) {
             emailHtmlBody = emailHtmlBody
@@ -130,7 +131,7 @@ public without sharing class ReassignRecord implements
             logHeadRecord.errorType += 'MAIL';
             logHeadRecord.errorCode += ex.getDmlType(0);
             logHeadRecord.errorMessage += ex.getDmlMessage(0);
-            this.log.remove(this.log.size() - 1);
+            if (!this.log.isEmpty()) this.log.remove(this.log.size() - 1);
             this.log.add(logHeadRecord);
         }
     }
@@ -154,16 +155,5 @@ public without sharing class ReassignRecord implements
             updateOwnerEvent.jobStatus__c += 'Final';
         }
         Database.SaveResult publishingResult = Eventbus.publish(updateOwnerEvent);
-        if (!publishingResult.isSuccess()) {
-            logHeadRecord.errorType += 'EB';
-            logHeadRecord.errorCode += 'EB [';
-            logHeadRecord.errorMessage += 'EB [';
-            for (Database.Error publishingError : publishingResult.getErrors()) {
-                logHeadRecord.errorCode += publishingError.getStatusCode() + ', ';
-                logHeadRecord.errorMessage += publishingError.getMessage() + '\n\n';
-            }
-            logHeadRecord.errorCode += ']';
-            logHeadRecord.errorMessage += ']';
-        }
     }
 }

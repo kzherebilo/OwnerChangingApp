@@ -77,7 +77,10 @@ require(['dojo/ready', 'dojox/cometd', 'dojo/dom', 'dojo', 'dojo/query'], functi
 				relayJobState(updateLog);
 				isTaskCompleted = true;
 				callCounter = 0;
-			}			
+			}
+			else if (!data.jobStatus__c.includes('Completed')) {
+				relayJobState(updateLog);
+			}		
 			console.debug('UPDATE_LOG DEBUG: ' + JSON.stringify(data, null, '\t'));
 		};
 				
