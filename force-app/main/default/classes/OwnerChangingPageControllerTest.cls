@@ -6,22 +6,44 @@ private class OwnerChangingPageControllerTest {
         AggregateResult[] groupedResults = new List<AggregateResult> ();
         OwnerChangingPageController pageController = new OwnerChangingPageController();
         pageController.selectedObjects = new List<String>();
+        pageController.objectsToUpdate = new List<String>();
         List<User> userList = DataFactoryTestHelper.createTestUsers();
         userList = [SELECT Id, Name FROM User WHERE Id =:userList[0].Id OR Id=:userList[1].Id];
         List<Account> recordList= DataFactoryTestHelper.createTestAccountsAsUser(userList[0]);
+        
         pageController.getUsers();
-        pageController.getOrgObjects();
         System.assert(pageController.userSuggestionList.contains(userList[0].Name));
         System.assert(pageController.userSuggestionList.contains(userList[1].Name));
         System.debug('Suggestions list is filled out correctly');
-        pageController.userObjects.addAll(pageController.orgObjects);
         pageController.selectedOldOwnerName = userList[0].Name;
         pageController.selectedNewOwnerName = userList[1].Name;
+        
+        pageController.getOrgObjects();
+        SelectOption objectOption = pageController.orgObjects[0];
+        pageController.selectedObjects.add(objectOption.getValue());
+        pageController.addObjectsToList();
+        System.assert(pageController.userObjects.contains(objectOption));
+        System.debug('List of objects to process has been updated with ' 
+            + objectOption.getValue() + ' object');
+        pageController.objectsToUpdate.add(objectOption.getValue());
+        pageController.removeObjectsFromList();
+        System.assertEquals(1, pageController.getUserDefinedObjects().size());
+        System.assertNotEquals(pageController.userObjects, pageController.getUserDefinedObjects());
+        System.debug(pageController.getUserDefinedObjects()[0].getLabel());
+        
+        pageController.selectedObjects.clear();
+        pageController.selectedObjects.add('Account');
+        pageController.addObjectsToList();
+        System.assert(pageController.userObjects.contains(
+            new SelectOption('Account', 'Account')));
+        System.debug('List of objects to process has been updated: Accounts added');
+
         pageController.enableEmails = true;
-        System.assertEquals(pageController.userObjects, pageController.getUserDefinedObjects());
+
         Test.startTest();
         pageController.updateOwner();
         Test.stopTest();
+        
         groupedResults = [SELECT COUNT(Id) numberOfRecords
             FROM Account WHERE OwnerId=:userList[1].Id];
         System.assertEquals(recordList.size(), 
@@ -30,6 +52,7 @@ private class OwnerChangingPageControllerTest {
         List<ApexPages.Message> messages = ApexPages.getMessages();
         System.debug(messages.size());
         System.debug(messages[0].getSummary());
+
     }
 
     @isTest
