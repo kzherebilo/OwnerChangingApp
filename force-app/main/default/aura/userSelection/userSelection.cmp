@@ -1,0 +1,18 @@
+<aura:component implements="flexipage:availableForAllPageTypes"
+                controller="ReassignRecordPageController">
+
+    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:attribute name="owners" type="User[]" />
+    <lightning:select name="owners" label="Select a user" required="true">
+        <aura:iteration items="{!v.owners}" var="owner">
+            <option text="{!owner.Name}"></option>
+        </aura:iteration>
+    </lightning:select>
+
+    <ul class="slds-box slds-theme_default">
+        <aura:iteration items="{!v.owners}" var="owner">
+            <li>{!owner.Name}</li>
+        </aura:iteration>
+    </ul>
+</aura:component>
+

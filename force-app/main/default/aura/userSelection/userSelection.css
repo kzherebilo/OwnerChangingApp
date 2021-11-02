@@ -1,0 +1,21 @@
+.THIS.contact-name {
+font-weight: token(fontWeightBold);
+}
+
+.THIS.has-results {
+color: token(colorTextWeak);
+font-weight: token(fontWeightBold);
+margin-bottom: token(spacingSmall);
+}
+
+.THIS.no-results {
+color: token(colorTextError);
+}
+
+.THIS.results {
+padding: token(spacingMedium);
+}
+
+.THIS.search-field {
+padding: token(spacingMedium);
+}

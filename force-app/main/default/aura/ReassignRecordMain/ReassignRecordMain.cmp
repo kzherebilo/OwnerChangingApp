@@ -1,0 +1,5 @@
+<aura:component implements="flexipage:availableForAllPageTypes">
+    <form class="slds-box slds-theme_default" >
+        <c:userSelection></c:userSelection>
+    </form>
+</aura:component>
