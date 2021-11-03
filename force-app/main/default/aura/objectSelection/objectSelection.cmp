@@ -1,0 +1,15 @@
+<aura:component controller="ReassignRecordPageController">
+    <aura:handler name="init" value="this" action="{!c.doInit}" />
+
+    <aura:attribute name="objectOptions" type="List" default="[]" />
+    <aura:attribute name="selectedObjects" type="List" default="[]" />
+
+    <lightning:dualListbox name="objectsToUpdate"
+                           label="Select objects to update"
+                           sourceLabel="Available"
+                           selectedLabel="Selected"
+                           fieldLevelHelp="Select object you would like to reassign to a new owner"
+                           options="{!v.objectOptions}"
+                           />
+
+</aura:component>

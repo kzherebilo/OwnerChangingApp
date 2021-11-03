@@ -1,0 +1,47 @@
+<aura:component>
+    <div class="slds-form-element">
+        <label class="slds-form-element__label" for="combobox-id-12" id="combobox-label-id-131">Relate To</label>
+        <div class="slds-form-element__control">
+          <div class="slds-combobox_container">
+            <div class="slds-combobox slds-dropdown-trigger slds-dropdown-trigger_click">
+              <div class="slds-combobox__form-element slds-input-has-icon slds-input-has-icon_right" role="none">
+                <input type="text" class="slds-input slds-combobox__input" id="combobox-id-12" aria-autocomplete="list" aria-controls="listbox-id-9" aria-expanded="false" aria-haspopup="listbox" autoComplete="off" role="combobox" placeholder="Search..." />
+                <span class="slds-icon_container slds-icon-utility-search slds-input__icon slds-input__icon_right">
+                  <!-- <svg class="slds-icon slds-icon slds-icon_x-small slds-icon-text-default" aria-hidden="true"> -->
+                    <!-- <use xlink:href="/assets/icons/utility-sprite/svg/symbols.svg#search"></use> -->
+                  <!-- </svg> -->
+                </span>
+              </div>
+              <div id="listbox-id-9" class="slds-dropdown slds-dropdown_length-5 slds-dropdown_fluid" role="listbox">
+                <ul class="slds-listbox slds-listbox_vertical" role="presentation">
+                  <li role="presentation" class="slds-listbox__item">
+                    <div id="option1" class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small" role="option">
+                      <span class="slds-media__figure slds-listbox__option-icon"></span>
+                      <span class="slds-media__body">
+                        <span class="slds-truncate" title="Burlington Textiles Corp of America">Burlington Textiles Corp of America</span>
+                      </span>
+                    </div>
+                  </li>
+                  <li role="presentation" class="slds-listbox__item">
+                    <div id="option2" class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small" role="option">
+                      <span class="slds-media__figure slds-listbox__option-icon"></span>
+                      <span class="slds-media__body">
+                        <span class="slds-truncate" title="Dickenson plc">Dickenson plc</span>
+                      </span>
+                    </div>
+                  </li>
+                  <li role="presentation" class="slds-listbox__item">
+                    <div id="option3" class="slds-media slds-listbox__option slds-listbox__option_plain slds-media_small" role="option">
+                      <span class="slds-media__figure slds-listbox__option-icon"></span>
+                      <span class="slds-media__body">
+                        <span class="slds-truncate" title="Edge Communications">Edge Communications</span>
+                      </span>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+</aura:component>	

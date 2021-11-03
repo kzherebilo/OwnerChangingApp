@@ -1,5 +1,5 @@
 ({
-    myAction : function(component, event, helper) {
-
+    openCurrentOwnerSearch: function(component, event, helper) {
+        component.set('v.isCrrentOwnerSearchOpen', true);
     }
-})
+ })
