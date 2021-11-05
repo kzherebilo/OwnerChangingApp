@@ -1,0 +1,3 @@
+<aura:event type="COMPONENT" description="Update of owner selection form">
+    <aura:attribute name="selectedUser" type="User" />
+</aura:event>

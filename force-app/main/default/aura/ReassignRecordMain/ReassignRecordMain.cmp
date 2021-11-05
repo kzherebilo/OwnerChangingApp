@@ -1,20 +1,45 @@
-<aura:component implements="flexipage:availableForAllPageTypes">
+<aura:component implements="flexipage:availableForAllPageTypes"
+                controller="ReassignRecordPageController">
+    
+    <aura:handler name="init" value="this" action="{!c.doInit}" />
+    <aura:handler name="updateUser" event="c:ownerUpdate"
+                  action="{!c.onUserUpdateHandler}" />
+    <aura:handler name="updateObjects" event="c:objectListUpdate"
+                  action="{!c.onObjectsUpdateHandler}" />
 
-    <aura:attribute name="isCrrentOwnerSearchOpen" type="Boolean" default="false" />
-    <aura:attribute name="currentOwner" type="String" />
+    <aura:attribute name="currentOwner" type="User" />
+    <aura:attribute name="newOwner" type="User" />
+    <aura:attribute name="objectsToUpdate" type="List" />
 
     <div class="slds-box slds-theme_default">
         <div class="slds-grid slds-gutters">
             <div class="slds-col slds-size_1-of-3">
                 <span>
-                    <c:userSelection />
+                    <c:userSelection title="Current owner"
+                                     aura:id="currentOwner" />
+                    <c:userSelection title="New owner"
+                                     aura:id="newOwner" />
+                    <lightning:input aura:id="enableEmails"
+                                     name="enableEmails"
+                                     type="toggle"
+                                     messageToggleActive=""
+                                     messageToggleInactive=""
+                                     label="Email Notifications?" />
+                    <lightning:button aura:id="reassignAction"
+                                      name="reassignAction"
+                                      variant="brand"
+                                      label="Reassign"
+                                      title="Reassign"
+                                      onclick="{!c.onReassignClickHandler}" />
                 </span>
             </div>
             <div class="slds-col slds-size_2-of-3">
                 <span>
-                    <c:objectSelection />
+                    <c:objectSelection aura:id="objectsToUpdate" />
                 </span>
             </div>
         </div>
     </div>
+
+    <lightning:notificationsLibrary aura:id="notifLib"/>
 </aura:component>

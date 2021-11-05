@@ -1,22 +1,15 @@
 ({
     doInit : function(component, event, helper) {
-        let action = component.get('c.getUsers');
-        action.setCallback(this, function(response) {
-            component.set('v.orgUsers', response.getReturnValue());
-        });
-        $A.enqueueAction(action);
-        helper.getUserTableColumns(component);
     },
-
 
     openSearchDialog: function(component, event, helper) {
         let orgUsers = component.get("v.orgUsers");
-        if (!orgUsers) {
-            console.debug('USER_SELECT_COMP DEBUG: ' + 'List of users is empty');
-            return;
-        }
         component.set('v.isSearchModalOpen', true);
-        component.set('v.userLookupTable', orgUsers);
+        helper.setUserLookupTableColumns(component);
+        helper.populateUserLookupTable(component, orgUsers);
+        if (!orgUsers) {
+            helper.setSearchDialogIsLoading(component);
+        }
     },
 
     closeSearchDialog: function(component, event, helper) {
@@ -24,21 +17,27 @@
     },
 
     submitSearchResult: function(component, event, helper) {
-        let searchResult = component.get('v.searchKeyword');
-        component.set('v.selectedUser', searchResult);
+        let selectedRows = helper.getUserLookupTable(component).getSelectedRows();
+        let selectedUser = component.find('selectedUser');
+        if (selectedRows && (selectedRows.length == 1)) {
+            selectedUser.set('v.value', selectedRows[0].Name);
+            helper.fireOnUserUpdateEvent(component, selectedRows[0]);
+        }
         component.set('v.isSearchModalOpen', false);
-
+        
     },
 
     updateUserLookupTable: function(component, event, helper) {
-        let keyword = event.getSource().get("v.value").toUpperCase();
         let orgUsers = component.get("v.orgUsers");
-        let filteredUserList = [];
-        for (let i = 0; i < orgUsers.length; i++) {
-            if (orgUsers[i].Name.toUpperCase().includes(keyword)) {
-                filteredUserList.push(orgUsers[i]);
-            }
-        }
-        component.set("v.userLookupTable", filteredUserList);
+        let keyword = event.getSource().get("v.value").toUpperCase();
+        helper.clearSelectedTableRows(component);
+        helper.populateUserLookupTable(component,
+            helper.reduceLookupTable(orgUsers, keyword));
+    },
+
+    onRowSelect: function(component, event, helper) {
+        let user = event.getParam('selectedRows');
+        let searchField = component.find('searchField');
+        searchField.set('v.value', user[0].Name);
     }
 })

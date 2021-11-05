@@ -1,16 +1,32 @@
 public without sharing class ReassignRecordPageController {
 
     @AuraEnabled
-    public static List<User> getUsers(){
+    public static List<User> getUsers() {
         return [SELECT Name, Username FROM User];
     }
 
     @AuraEnabled
-    public static List<String> getObjects(){
+    public static List<String> getObjects() {
         List<String> objectOptions = new List<String> ();
-        objectOptions.add(ReassignRecordPageHelper.STRING_DELIMITER);
-        objectOptions.add('Account;Account');
-        objectOptions.add('Case;Case');
+        String delimiter = ReassignRecordPageHelper.STRING_DELIMITER;
+        objectOptions.add(delimiter);
+        for (SelectOption objectOption : ReassignRecordPageHelper.getOrgObjects()) {
+            objectOptions.add(objectOption.getLabel() + delimiter
+                + objectOption.getValue());
+        }
         return objectOptions;
+    }
+
+    @AuraEnabled
+    public static Boolean updateRecords(User currentOwner, User newOwner,
+            List<String> objectList, Boolean enableEmails){
+        ReassignRecord reassignRecordJob = new ReassignRecord(currentOwner.Id,
+            newOwner.Id, objectList);
+        reassignRecordJob.oldOwnerName = currentOwner.Name;
+        reassignRecordJob.newOwnerName = newOwner.Name;
+        reassignRecordJob.enableEmails = enableEmails;
+        // Check for LimitException is required!!!
+        Database.executeBatch(reassignRecordJob);
+        return true;
     }
 }

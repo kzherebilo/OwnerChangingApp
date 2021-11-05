@@ -1,34 +1,34 @@
-<aura:component implements="flexipage:availableForAllPageTypes"
-                controller="ReassignRecordPageController">
+<aura:component implements="flexipage:availableForAllPageTypes">
 
-    <aura:handler name="init" value="{!this}" action="{!c.doInit}"/>
+    <aura:registerEvent name="updateUser" type="c:ownerUpdate" />
+
+    <!-- <aura:handler name="init" value="{!this}" action="{!c.doInit}"/> -->
+    
+
     <aura:attribute name="orgUsers" type="Object" />
-    <aura:attribute name="userLookupTable" type="Object" />
-    <aura:attribute name="selectedUser" type="String" />
-    <aura:attribute name="searchKeyword" type="String" />
     <aura:attribute name="isSearchModalOpen" type="Boolean" default="false" />
-    <aura:attribute name="userLookupTableColumns" type="List" default="[]" />
-    <aura:attribute name="componentTitle" type="String" default="Select user" />
+    <aura:attribute name="title" type="String" default="Select user" />
 
     <!-- COMPONENT INTERFACE IN IDLE STATE -->
-    <fieldset class="slds-box slds-theme_default">
-        <legend class="slds-text-heading_small">
-            {!v.componentTitle}
+    <fieldset class="slds-box slds-theme_default " >
+        <legend class="slds-p-around__none slds-m-around__none">
+            <b>{!v.title} </b>
         </legend>
         <ul class="slds-list_horizontal">
-            <li class="slds-align-bottom slds-p-right_small">
-                <lightning:button variant="brand"
-                                label="Select"
-                                title="Select"
-                                name="selectCurrentOwner"
-                                onclick="{!c.openSearchDialog}"
+            <li class="slds-align-bottom slds-var-p-right_small">
+                <lightning:button aura:id="selectUser"
+                                  name="selectUser"
+                                  variant="neutral"
+                                  label="Select"
+                                  title="Select"
+                                  onclick="{!c.openSearchDialog}"
                                 />
             </li>
             <li class="slds-align-bottom" style="width: 100%;">
-                <lightning:input name="selectedUser"
-                                 value="{!v.selectedUser}"
+                <lightning:input aura:id="selectedUser"
+                                 name="selectedUser"
                                  readonly="true"
-                                 placeholder="Presee Select to select user..."
+                                 placeholder="Click Select to search for user..."
                                  />
             </li>
         </ul>
@@ -36,7 +36,7 @@
     <!-- / COMPONENT INTERFACE IN IDLE STATE -->
 
     <!-- SEARCH USER MODAL -->
-    <div class="slds-m-around_xx-large">
+    <div class="slds-var-m-around_xx-large">
         <aura:if isTrue="{!v.isSearchModalOpen}">
                 
             <!-- Modal/Popup Box starts here-->
@@ -61,21 +61,23 @@
                         </h2>
                     </header>
                     <!--Modal/Popup Box Body Starts here-->
-                    <div class="slds-modal__content slds-p-around_medium slds-scrollable_none"
-                         id="modal-content-id-1">
+                    <div class="slds-modal__content slds-var-p-around_medium slds-scrollable_none"
+                         id="modal-content-id-1"
+                         style="height: 300px;">
                     <!-- USER SEARCH DIALOG -->
-                        <lightning:input name="serachField"
-                                        aura:id="searchField"
-                                        placeholder="Start typing user name..."
-                                        type="search"
-                                        value="{!v.searchKeyword}"
-                                        class="slds-var-p-bottom_large"
-                                        onchange="{!c.updateUserLookupTable}"/>
-                        <lightning:datatable data="{!v.userLookupTable}"
-                                            columns="{!v.userLookupTableColumns}"
-                                            keyField="Id"
-                                            hideCheckboxColumn="true"
-                                            resizeColumnDisabled="true"/>
+                        <lightning:input name="searchField"
+                                         aura:id="searchField"
+                                         placeholder="Start typing user name..."
+                                         type="search"
+                                         class="slds-var-p-bottom_large"
+                                         onchange="{!c.updateUserLookupTable}"/>
+                        <lightning:datatable name="userLookupTable"
+                                             aura:id="userLookupTable" 
+                                             keyField="Id"
+                                             hideCheckboxColumn="false"
+                                             resizeColumnDisabled="true"
+                                             maxRowSelection="1" 
+                                             onrowselection="{!c.onRowSelect}"/>
                     <!-- / USER SEARCH DIALOG -->
                     </div>
                     <!--Modal/Popup Box Footer Starts here--> 
