@@ -24,13 +24,15 @@
                                      type="toggle"
                                      messageToggleActive=""
                                      messageToggleInactive=""
-                                     label="Email Notifications?" />
+                                     label="Email Notifications?"
+                                     class="slds-var-m-around_small" />
                     <lightning:button aura:id="reassignAction"
                                       name="reassignAction"
                                       variant="brand"
                                       label="Reassign"
                                       title="Reassign"
-                                      onclick="{!c.onReassignClickHandler}" />
+                                      onclick="{!c.onReassignClickHandler}"
+                                      class="slds-var-m-around_small"/>
                 </span>
             </div>
             <div class="slds-col slds-size_2-of-3">

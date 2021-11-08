@@ -10,10 +10,9 @@
     <aura:attribute name="title" type="String" default="Select user" />
 
     <!-- COMPONENT INTERFACE IN IDLE STATE -->
-    <fieldset class="slds-box slds-theme_default " >
-        <legend class="slds-p-around__none slds-m-around__none">
-            <b>{!v.title} </b>
-        </legend>
+    <fieldset class="slds-box slds-theme_default" >
+        <legend><b>{!v.title}</b></legend>
+        <!-- <legend class="slds-form-element__legend slds-form-element__label">{!v.title}</legend> -->
         <ul class="slds-list_horizontal">
             <li class="slds-align-bottom slds-var-p-right_small">
                 <lightning:button aura:id="selectUser"
@@ -29,6 +28,7 @@
                                  name="selectedUser"
                                  readonly="true"
                                  placeholder="Click Select to search for user..."
+                                 variant="label-hidden"
                                  />
             </li>
         </ul>
@@ -36,7 +36,7 @@
     <!-- / COMPONENT INTERFACE IN IDLE STATE -->
 
     <!-- SEARCH USER MODAL -->
-    <div class="slds-var-m-around_xx-large">
+    <div class="slds-var-m-around_small">
         <aura:if isTrue="{!v.isSearchModalOpen}">
                 
             <!-- Modal/Popup Box starts here-->
@@ -71,13 +71,15 @@
                                          type="search"
                                          class="slds-var-p-bottom_large"
                                          onchange="{!c.updateUserLookupTable}"/>
-                        <lightning:datatable name="userLookupTable"
-                                             aura:id="userLookupTable" 
-                                             keyField="Id"
-                                             hideCheckboxColumn="false"
-                                             resizeColumnDisabled="true"
-                                             maxRowSelection="1" 
-                                             onrowselection="{!c.onRowSelect}"/>
+                        <div style="height: 75%;">
+                            <lightning:datatable name="userLookupTable"
+                                                aura:id="userLookupTable" 
+                                                keyField="Id"
+                                                hideCheckboxColumn="false"
+                                                resizeColumnDisabled="true"
+                                                maxRowSelection="1" 
+                                                onrowselection="{!c.onRowSelect}" />
+                        </div>
                     <!-- / USER SEARCH DIALOG -->
                     </div>
                     <!--Modal/Popup Box Footer Starts here--> 

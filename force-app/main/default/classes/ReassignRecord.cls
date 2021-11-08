@@ -1,30 +1,22 @@
 public without sharing class ReassignRecord implements
         Database.Batchable<SObject>, Database.Stateful {
     
-    private class LogRecord {
-        public String       jobId               = '';
-        public String       jobStatus           = '';
-        public String       objectName          = '';
-        public Integer      recordsProcessed    = 0;
-        public Integer      recordsUpdated      = 0;
-        public Integer      recordsFailed       = 0;
-        public Integer      batchJobItems       = 0;
-        public Integer      batchJobErrors      = 0;
-        public String       errorType           = '';
-        public String       errorCode           = '';
-        public String       errorMessage        = '';
-    }
+    public  String                              oldOwnerName;
+    public  String                              newOwnerName;
+    public  String                              notificationName;
+    public  Boolean                             enableEmails;
+    public  List<String>                        emailAddressList;
+    
+    private String                              oldOwnerId;
+    private String                              newOwnerId;
+    private User                                apexJobOwner;
+    private List<String>                        objectNameList;
+    private Integer                             numberOfRecordsUpdated;
+    private Integer                             numberOfRecordsProcessed;
+    private List<Record_Reassignment_Task__c>   sfLog;
+    private AsyncApexJob                        finishedApexJob;
+    private CustomNotificationType              notificationType;
 
-    public  String                      oldOwnerName;
-    public  String                      newOwnerName;
-    public  Boolean                     enableEmails;
-    private String                      oldOwnerId;
-    private String                      newOwnerId;
-    private List<String>                objectNameList;
-    private Integer                     numberOfRecordsUpdated = 0;
-    private Integer                     numberOfRecordsProcessed = 0;
-    private List<LogRecord>             log = new List<LogRecord> ();
-    public  List<String>                emailAddressList = new List<String> (); 
 
     public ReassignRecord(String oldOwnerId, String newOwnerId,
             List<String> objectNameList) {
@@ -34,10 +26,28 @@ public without sharing class ReassignRecord implements
         this.oldOwnerName = '';
         this.newOwnerName = '';
         this.enableEmails = false;
+        this.notificationName = 'Record_Reassignment_Notification';
+        this.numberOfRecordsProcessed = 0;
+        this.numberOfRecordsUpdated = 0;
+        this.emailAddressList = new List<String> ();
+        this.sfLog = new List<Record_Reassignment_Task__c> ();
+        try {
+            this.notificationType = this.getCustomNotificationType(
+                this.notificationName);
+        }
+        catch (Exception e) {
+            System.debug('ReassignRecordsClass: Failed to get notification type');
+        }
     }
 
     public Database.QueryLocator start(Database.BatchableContext context) {
         String oldOwnerId = this.oldOwnerId;
+        if (this.apexJobOwner == null) {
+            this.apexJobOwner = this.getApexJob(context).CreatedBy;
+        }
+        if (this.emailAddressList.isEmpty() && this.apexJobOwner != null) {
+            this.emailAddressList.add(apexJobOwner.Email);
+        }
         String query = 'SELECT OwnerId FROM ' + this.objectNameList[0]
             + ' WHERE OwnerId=:oldOwnerId';
         return Database.getQueryLocator(query);
@@ -57,65 +67,49 @@ public without sharing class ReassignRecord implements
     }
 
     public void finish(Database.BatchableContext context) {
-        AsyncApexJob apexJob = [SELECT Id, Status, NumberOfErrors,
-            JobItemsProcessed, TotalJobItems, CreatedBy.Email
-            FROM AsyncApexJob WHERE Id =
-            :context.getJobId()];
-        if (this.emailAddressList.isEmpty()) {
-            this.emailAddressList.add(apexJob.CreatedBy.Email);
-        }
-        LogRecord logRec = new LogRecord();
-        logRec.jobId = context.getJobId();
-        logRec.jobStatus = apexJob.Status;
-        logRec.objectName = objectNameList[0];
-        logRec.recordsProcessed = this.numberOfRecordsProcessed;
-        logRec.recordsUpdated = this.numberOfRecordsUpdated;
-        logRec.recordsFailed = logRec.recordsProcessed - logRec.recordsUpdated;
-        logRec.batchJobItems = apexJob.TotalJobItems;
-        logRec.batchJobErrors = apexJob.NumberOfErrors;
-        this.log.add(logRec);
-        this.numberOfRecordsProcessed = 0;
-        this.numberOfRecordsUpdated = 0;
-        this.objectNameList.remove(0);
-        if (this.objectNameList.size() > 0) {
-            publishReport();
-            Database.executeBatch(this);
-        }
-        else {
-            emailReport();
-            publishReport();
-        }
-
+        this.finishedApexJob = this.getApexJob(context);
+        this.logTaskResults();
+        this.resetTaskContext();
+        this.chainApexJob();
     }
 
 
     private void emailReport() {
-
         if (!this.enableEmails) return;
+        if (this.emailAddressList.isEmpty()) return;
         Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
-        LogRecord logHeadRecord = new LogRecord();
-        if (!this.log.isEmpty()) logHeadRecord = this.log[this.log.size() - 1];
+        Record_Reassignment_Task__c logHeadRecord;
+        Integer logHeadPointer = this.sfLog.size() - 1;
+        logHeadRecord = this.sfLog[logHeadPointer];
         String emailHtmlBody = '';
         String emailSubject = '';
         String overallStatus = 'Completed';
 
         emailHtmlBody = emailHtmlBody
-            + '<tr><td>Old record owner</td><td>: ' + this.oldOwnerName +'</td></tr>\n'
-            + '<tr><td>New record owner</td><td>: ' + this.newOwnerName +'</td></tr>\n'
+            + '<tr><td>Old record owner</td><td>: ' 
+            + this.oldOwnerName +'</td></tr>\n'
+            + '<tr><td>New record owner</td><td>: '
+            + this.newOwnerName +'</td></tr>\n'
             + '<br/><br/>\n';
-        for (LogRecord logRec : log) {
+        for (Record_Reassignment_Task__c logRec : sflog) {
             emailHtmlBody = emailHtmlBody
-                + '<tr><td>Apex batch job ID</td><td>: ' + logRec.jobId +'</td></tr>\n'
-                + '<tr><td>Job status</td><td>: ' + logRec.jobStatus +'</td></tr>\n'
-                + '<tr><td>Object name</td><td>: ' + logRec.objectName +'</td></tr>\n'
-                + '<tr><td>Records processed</td><td>: ' + logRec.recordsProcessed +'</td></tr>\n'
-                + '<tr><td>Records updated</td><td>: ' + logRec.recordsUpdated +'</td></tr>\n'
-                + '<tr><td>Records failed</td><td>: ' + logRec.recordsFailed +'</td></tr>\n'
-                + '<tr><td>Job items</td><td>: ' + logRec.batchJobItems +'</td></tr>\n'
-                + '<tr><td>Job errors</td><td>: ' + logRec.batchJobErrors +'</td></tr>\n'
+                + '<tr><td>Apex batch job ID</td><td>: ' 
+                + logRec.Apex_Job_Id__c +'</td></tr>\n'
+                + '<tr><td>Job status</td><td>: '
+                + logRec.Status__c +'</td></tr>\n'
+                + '<tr><td>Object name</td><td>: '
+                + logRec.Object_Type__c +'</td></tr>\n'
+                + '<tr><td>Records processed</td><td>: '
+                + logRec.Number_Of_Records_Processed__c +'</td></tr>\n'
+                + '<tr><td>Records updated</td><td>: ' 
+                + logRec.Number_Of_Records_Updated__c +'</td></tr>\n'
+                + '<tr><td>Job items</td><td>: '
+                + logRec.Apex_Total_Batches__c +'</td></tr>\n'
+                + '<tr><td>Errors</td><td>: '
+                + logRec.Error_Description__c +'</td></tr>\n'
                 + '<br/>\n';
-            if (logRec.jobStatus != 'Completed') overallStatus = 'Failed';
-            emailSubject += logRec.objectName + ', ';
+            if (logRec.Status__c != 'Completed') overallStatus = 'Failed';
+            emailSubject += logRec.Object_Type__c + ', ';
         }
         emailSubject
             = overallStatus.toUpperCase() + ': '
@@ -128,32 +122,129 @@ public without sharing class ReassignRecord implements
             Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
         }
         catch (System.EmailException ex) {
-            logHeadRecord.errorType += 'MAIL';
-            logHeadRecord.errorCode += ex.getDmlType(0);
-            logHeadRecord.errorMessage += ex.getDmlMessage(0);
-            if (!this.log.isEmpty()) this.log.remove(this.log.size() - 1);
-            this.log.add(logHeadRecord);
+            logHeadRecord.Error_Type__c += 'MAIL;';
+            logHeadRecord.Error_Code__c += ex.getDmlType(0) + ';';
+            logHeadRecord.Error_Description__c += ex.getDmlMessage(0) + ';';
+            this.sfLog.remove(logHeadPointer);
+            this.sfLog.add(logHeadRecord);
         }
     }
 
     private void publishReport() {
-        if (this.log.isEmpty()) return;
-        LogRecord logHeadRecord = this.log[this.log.size() - 1];
+        if (this.sfLog.isEmpty()) return;
+        Record_Reassignment_Task__c logHeadRecord;
+        logHeadRecord = this.sfLog[this.sfLog.size() - 1];
         Update_Owner_Event__e updateOwnerEvent = new Update_Owner_Event__e (
             oldOwnerName__c = this.oldOwnerName,
             newOwnerName__c = this.newOwnerName,
-            jobId__c = logHeadRecord.jobId,
-            jobStatus__c = logHeadRecord.jobStatus,
-            objectName__c = logHeadRecord.objectName,
-            recordsProcessed__c = logHeadRecord.recordsProcessed,
-            recordsUpdated__c = logHeadRecord.recordsUpdated,
-            errorCode__c = logHeadRecord.errorCode,
-            errorType__c = logHeadRecord.errorType,
-            errorMessage__c = logHeadRecord.errorMessage
+            jobId__c = logHeadRecord.Apex_Job_Id__c,
+            jobStatus__c = logHeadRecord.Status__c,
+            objectName__c = logHeadRecord.Object_Type__c,
+            recordsProcessed__c = logHeadRecord.Number_Of_Records_Processed__c,
+            recordsUpdated__c = logHeadRecord.Number_Of_Records_Updated__c,
+            errorCode__c = logHeadRecord.Error_Code__c,
+            errorType__c = logHeadRecord.Error_Type__c,
+            errorMessage__c = logHeadRecord.Error_Description__c
         );
         if (this.objectNameList.size() == 0) {
             updateOwnerEvent.jobStatus__c += 'Final';
         }
         Database.SaveResult publishingResult = Eventbus.publish(updateOwnerEvent);
+    }
+
+    private void ringTheBell() {
+        if (this.notificationType == null) return;
+        if (this.apexJobOwner == null) return;
+        Record_Reassignment_Task__c logHeadRecord = getLogHead();
+        if (logHeadRecord == null) return;
+        String targetId = logHeadRecord.Id;
+        Set<String> recipientIdLSet = new Set<String> {apexJobOwner.Id};
+        Messaging.CustomNotification notification;     
+        notification = new Messaging.CustomNotification();
+        notification.setTitle('Record reassignment ' + logHeadRecord.Status__c);
+        notification.setBody(
+            'There have been ' 
+            + logHeadRecord.Number_Of_Records_Updated__c + ' '
+            + logHeadRecord.Object_Type__c + ' records updated!');
+        notification.setNotificationTypeId(this.notificationType.Id);
+        notification.setTargetId(targetId);
+        try {
+            notification.send(recipientIdLSet);
+        }
+        catch (Exception e) {
+            System.debug('ReassignRecordsClass: Failed send notification');
+        }
+    }
+
+    private void logTaskResults() {
+        Record_Reassignment_Task__c newLogRecord;
+        newLogRecord = new Record_Reassignment_Task__c();
+        newLogRecord.Status__c = this.finishedApexJob.Status;
+        newLogRecord.Apex_Job_Id__c = this.finishedApexJob.Id;
+        newLogRecord.Previous_Owner__c = this.oldOwnerId;
+        newLogRecord.New_Owner__c = this.newOwnerId;
+        newLogRecord.Object_Type__c = this.objectNameList[0];
+        newLogRecord.Number_Of_Records_Processed__c = this.numberOfRecordsProcessed;
+        newLogRecord.Number_Of_Records_Updated__c = this.numberOfRecordsUpdated;
+        newLogRecord.Apex_Batches_Processed__c = this.finishedApexJob.JobItemsProcessed;
+        newLogRecord.Apex_Total_Batches__c = this.finishedApexJob.TotalJobItems;
+        if (this.finishedApexJob.NumberOfErrors > 0) {
+            newLogRecord.Error_Type__c = 'APEX;';
+            newLogRecord.Error_Description__c = this.finishedApexJob.ExtendedStatus;
+        }
+        this.sfLog.add(newLogRecord);
+    }
+
+    private void resetTaskContext() {
+        this.numberOfRecordsUpdated = 0;
+        this.numberOfRecordsProcessed = 0;
+        this.objectNameList.remove(0);
+    }
+
+    private void chainApexJob() {
+        Record_Reassignment_Task__c logHeadRecord;
+        if (this.objectNameList.size() > 0) {
+            publishReport();
+            Database.executeBatch(this);
+        }
+        else {
+            emailReport();
+            publishReport();
+        }
+        logHeadRecord = this.popLog();
+        insert logHeadRecord;
+        this.pushLog(logHeadRecord);
+        this.ringTheBell();
+    }
+
+    private AsyncApexJob getApexJob(Database.BatchableContext context) {
+        return [SELECT Id, Status, NumberOfErrors, ExtendedStatus,
+            JobItemsProcessed, TotalJobItems, CreatedBy.Email
+            FROM AsyncApexJob WHERE Id=:context.getJobId()];
+    }
+
+    private CustomNotificationType getCustomNotificationType(String notificationName) {
+        return [SELECT Id, DeveloperName FROM CustomNotificationType
+            WHERE DeveloperName =: notificationName];
+    }
+
+    private Record_Reassignment_Task__c popLog() {
+        Record_Reassignment_Task__c logHeadRecord;
+        if (!this.sfLog.isEmpty()) {
+            logHeadRecord = this.sfLog.remove(this.sfLog.size() - 1);
+        }
+        return logHeadRecord;
+    }
+
+    private Record_Reassignment_Task__c getLogHead() {
+        Record_Reassignment_Task__c logHeadRecord;
+        if (!this.sfLog.isEmpty()) {
+            logHeadRecord = this.sfLog[this.sfLog.size() - 1];
+        }
+        return logHeadRecord;
+    }
+
+    private void pushLog(Record_Reassignment_Task__c record) {
+        this.sfLog.add(record);
     }
 }

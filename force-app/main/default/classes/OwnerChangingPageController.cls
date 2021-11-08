@@ -6,7 +6,8 @@ public without sharing class OwnerChangingPageController {
     public String[]     selectedObjects         { get; set; }
     public String[]     objectsToUpdate         { get; set; }
     public Boolean      enableEmails            { get; set; }
-    public String       userSuggestionList      {
+    
+    public String userSuggestionList      {
         get {
             String suggestions = '';
             if (this.userOptionMap.isEmpty()) this.getUsers();
@@ -16,17 +17,18 @@ public without sharing class OwnerChangingPageController {
             return suggestions;
         }
     }
-    public List<SelectOption> orgObjects        = new List<SelectOption> ();
-    public List<SelectOption> userObjects       = new List<SelectOption> ();
+    public List<SelectOption> orgObjects = new List<SelectOption> ();
+    public List<SelectOption> userObjects = new List<SelectOption> ();
 
     //
     // Private properties
-    private final List<String> objectFilter     = new List<String> {
+    private final List<String> objectFilter = new List<String> {
         'Account',
         'Opportunity',
         'Lead',
         'Contact'
     };
+    
     private Map<Id, String> userOptionMap       = new Map<Id, String> ();
     private Id          updateOwnerClassId;
     private String      eventBuffer             = '';
