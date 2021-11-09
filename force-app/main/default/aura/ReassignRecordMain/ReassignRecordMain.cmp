@@ -7,10 +7,18 @@
     <aura:handler name="updateObjects" event="c:objectListUpdate"
                   action="{!c.onObjectsUpdateHandler}" />
 
+    <lightning:empApi aura:id="empApi" />
+
     <aura:attribute name="currentOwner" type="User" />
     <aura:attribute name="newOwner" type="User" />
     <aura:attribute name="objectsToUpdate" type="List" />
+    <aura:attribute name="isLoading" type="Boolean" default="false" />
 
+
+    <aura:if isTrue="{!v.isLoading}">
+        <lightning:spinner size="large" />
+    </aura:if>    
+    
     <div class="slds-box slds-theme_default">
         <div class="slds-grid slds-gutters">
             <div class="slds-col slds-size_1-of-3">
@@ -27,12 +35,12 @@
                                      label="Email Notifications?"
                                      class="slds-var-m-around_small" />
                     <lightning:button aura:id="reassignAction"
-                                      name="reassignAction"
-                                      variant="brand"
-                                      label="Reassign"
-                                      title="Reassign"
-                                      onclick="{!c.onReassignClickHandler}"
-                                      class="slds-var-m-around_small"/>
+                                    name="reassignAction"
+                                    variant="brand"
+                                    label="Reassign"
+                                    title="Reassign"
+                                    onclick="{!c.onReassignClickHandler}"
+                                    class="slds-var-m-around_small"/>
                 </span>
             </div>
             <div class="slds-col slds-size_2-of-3">

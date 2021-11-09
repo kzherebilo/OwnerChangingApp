@@ -25,6 +25,37 @@
         $A.enqueueAction(action);
     },
 
+    setupEventBus: function(component) {
+        let empApi = component.find('empApi');
+        let channel = this.getPlatformEventChannel();
+        empApi.onError($A.getCallback(function(error) {
+            console.debug('EMP_API_DEBUG: ' + JSON.stringify(error));
+        }));
+        empApi.subscribe(channel, -1, $A.getCallback(eventReceived => {
+            // Process event (this is called each time we receive an event)
+            console.debug('EMP_API_DEBUG: Received ',
+                JSON.stringify(eventReceived));
+            if (this.isFianalPlatformEvent(eventReceived)) {
+                component.set('v.isLoading', false);
+                this.getNotificationBar(component).showToast({
+                    "variant": "success",
+                    "title": "Success!",
+                    "message": "Records have been updated!"
+                });
+            }
+        }))
+        .then(subscription => {
+            // Subscription response received.
+            // We haven't received an event yet.
+            console.debug('EMP_API_DEBUG: Subscription request sent to: ',
+                subscription.channel);
+        });
+    },
+
+    isFianalPlatformEvent: function(event) {
+        return event.data.payload.jobStatus__c.includes('Final');
+    },
+
     parseObjectOptionList : function(objectOptionList) {
         let delimiter = objectOptionList[0];
         let parsedObjectList = [];
@@ -86,5 +117,9 @@
 
     getOptionsEmailEnabler: function(component) {
         return component.find('enableEmails');
+    },
+
+    getPlatformEventChannel: function() {
+        return '/event/Update_Owner_Event__e';
     }
 })

@@ -2,6 +2,7 @@
     doInit : function(component, event, helper) {
         helper.getOrgUsers(component);
         helper.getOrgObjects(component);
+        helper.setupEventBus(component);
     },
 
     onUserUpdateHandler: function(component, event, helper) {
@@ -22,6 +23,7 @@
     onReassignClickHandler: function(component, event, helper) {
         if (!helper.validateForm(component)) return;
         let action = component.get('c.updateRecords');
+        component.set('v.isLoading', true);
         action.setParams({
             "currentOwner": component.get('v.currentOwner'),
             "newOwner": component.get('v.newOwner'),
@@ -31,8 +33,17 @@
         action.setCallback(this, function(response) {
             if (response) {
                 helper.getNotificationBar(component).showToast({
+                    "variant": "info",
                     "title": "Success!",
-                    "message": "Record update has been initiated"
+                    "message": "Records updating has been initiated"
+                });
+            }
+            else {
+                component.set('v.isLoading', false);
+                helper.getNotificationBar(component).showToast({
+                    "variant": "warning",
+                    "title": "Warning!",
+                    "message": "Another similar job is in progress"
                 });
             }
         });

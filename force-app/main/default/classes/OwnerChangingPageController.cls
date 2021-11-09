@@ -105,32 +105,7 @@ public without sharing class OwnerChangingPageController {
         if (this.orgObjects.isEmpty() && !this.userObjects.isEmpty()) {
             return emptyPickList;
         }
-        List<String> objectsLabels;
-        Map<String, Schema.SObjectType> globalDescribe = Schema.getGlobalDescribe();
-        for (Schema.SObjectType objectType : globalDescribe.values()) {
-            Schema.DescribeSObjectResult objectDescription
-                = objectType.getDescribe();
-            Map<String, Schema.SObjectField> objectFieldMap
-                = objectDescription.fields.getMap();
-            Boolean objectQualifies = true
-                && this.objectFilter.contains(objectDescription.getName());
-                //&& objectDescription.isSearchable();
-                //&& objectDescription.isCreateable();
-                //|| objectDescription.isCustom();
-            if (!objectQualifies) continue;
-            Boolean fieldQualifies = true;
-            // for (Schema.SObjectField objectField : objectFieldMap.values()) {
-            //     fieldQualifies = objectField.getDescribe().getName() == 'OwnerId';
-            //     if (fieldQualifies) break;
-            // }
-            if (fieldQualifies) {
-                this.orgObjects.add(new SelectOption(objectDescription.getName(),
-                    objectDescription.getLabel()));
-                // standardObjectNames.put(objectDescription.getLabel(), 
-                //     objectDescription.getName());
-            }
-        }
-        this.orgObjects.sort();
+        this.orgObjects = ReassignRecordPageHelper.getOrgObjects();
         return this.orgObjects;
     }
 

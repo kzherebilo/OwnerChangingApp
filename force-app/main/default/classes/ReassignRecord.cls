@@ -4,6 +4,7 @@ public without sharing class ReassignRecord implements
     public  String                              oldOwnerName;
     public  String                              newOwnerName;
     public  String                              notificationName;
+    public  String                              emailTemplateName;
     public  Boolean                             enableEmails;
     public  List<String>                        emailAddressList;
     
@@ -16,6 +17,7 @@ public without sharing class ReassignRecord implements
     private List<Record_Reassignment_Task__c>   sfLog;
     private AsyncApexJob                        finishedApexJob;
     private CustomNotificationType              notificationType;
+    private EmailTemplate                       emailVfTemplate;
 
 
     public ReassignRecord(String oldOwnerId, String newOwnerId,
@@ -27,6 +29,7 @@ public without sharing class ReassignRecord implements
         this.newOwnerName = '';
         this.enableEmails = false;
         this.notificationName = 'Record_Reassignment_Notification';
+        this.emailTemplateName = 'Record_Reassignment_Email_Template';
         this.numberOfRecordsProcessed = 0;
         this.numberOfRecordsUpdated = 0;
         this.emailAddressList = new List<String> ();
@@ -36,7 +39,14 @@ public without sharing class ReassignRecord implements
                 this.notificationName);
         }
         catch (Exception e) {
-            System.debug('ReassignRecordsClass: Failed to get notification type');
+            this.exceptionHandler(e);
+        }
+        try {
+            this.emailVfTemplate = this.getCustomEmailTemplate(
+                this.emailTemplateName);
+        }
+        catch (Exception e) {
+            this.exceptionHandler(e);
         }
     }
 
@@ -74,50 +84,23 @@ public without sharing class ReassignRecord implements
     }
 
 
+
+    /**************************************************************************/
+    /***************************** HELPER METHODS *****************************/
+    /**************************************************************************/
+
     private void emailReport() {
         if (!this.enableEmails) return;
         if (this.emailAddressList.isEmpty()) return;
+        if (this.emailVfTemplate == null) return;
         Messaging.SingleEmailMessage mail = new Messaging.SingleEmailMessage();
-        Record_Reassignment_Task__c logHeadRecord;
-        Integer logHeadPointer = this.sfLog.size() - 1;
-        logHeadRecord = this.sfLog[logHeadPointer];
-        String emailHtmlBody = '';
-        String emailSubject = '';
-        String overallStatus = 'Completed';
-
-        emailHtmlBody = emailHtmlBody
-            + '<tr><td>Old record owner</td><td>: ' 
-            + this.oldOwnerName +'</td></tr>\n'
-            + '<tr><td>New record owner</td><td>: '
-            + this.newOwnerName +'</td></tr>\n'
-            + '<br/><br/>\n';
-        for (Record_Reassignment_Task__c logRec : sflog) {
-            emailHtmlBody = emailHtmlBody
-                + '<tr><td>Apex batch job ID</td><td>: ' 
-                + logRec.Apex_Job_Id__c +'</td></tr>\n'
-                + '<tr><td>Job status</td><td>: '
-                + logRec.Status__c +'</td></tr>\n'
-                + '<tr><td>Object name</td><td>: '
-                + logRec.Object_Type__c +'</td></tr>\n'
-                + '<tr><td>Records processed</td><td>: '
-                + logRec.Number_Of_Records_Processed__c +'</td></tr>\n'
-                + '<tr><td>Records updated</td><td>: ' 
-                + logRec.Number_Of_Records_Updated__c +'</td></tr>\n'
-                + '<tr><td>Job items</td><td>: '
-                + logRec.Apex_Total_Batches__c +'</td></tr>\n'
-                + '<tr><td>Errors</td><td>: '
-                + logRec.Error_Description__c +'</td></tr>\n'
-                + '<br/>\n';
-            if (logRec.Status__c != 'Completed') overallStatus = 'Failed';
-            emailSubject += logRec.Object_Type__c + ', ';
-        }
-        emailSubject
-            = overallStatus.toUpperCase() + ': '
-            + 'Update owner of ' + emailSubject.left(emailSubject.length() - 2)
-            + ' records';
-        mail.setToAddresses(emailAddressList);
-        mail.setSubject(emailSubject);
-        mail.setHtmlBody(emailHtmlBody);
+        Record_Reassignment_Task__c logHeadRecord = this.getLogHead();
+        mail.setTemplateId(this.emailVfTemplate.Id);
+        mail.setToAddresses(this.emailAddressList);
+        mail.setTargetObjectId(this.apexJobOwner.Id);
+        mail.setWhatId(logHeadRecord.Id);
+        mail.setSaveAsActivity(false);
+        mail.setUseSignature(false);
         try {
             Messaging.sendEmail(new Messaging.SingleEmailMessage[] { mail });
         }
@@ -125,8 +108,9 @@ public without sharing class ReassignRecord implements
             logHeadRecord.Error_Type__c += 'MAIL;';
             logHeadRecord.Error_Code__c += ex.getDmlType(0) + ';';
             logHeadRecord.Error_Description__c += ex.getDmlMessage(0) + ';';
-            this.sfLog.remove(logHeadPointer);
-            this.sfLog.add(logHeadRecord);
+            this.popLog();
+            this.pushLog(logHeadRecord);
+            update logHeadRecord;
         }
     }
 
@@ -172,7 +156,7 @@ public without sharing class ReassignRecord implements
             notification.send(recipientIdLSet);
         }
         catch (Exception e) {
-            System.debug('ReassignRecordsClass: Failed send notification');
+            this.exceptionHandler(e);
         }
     }
 
@@ -202,19 +186,16 @@ public without sharing class ReassignRecord implements
     }
 
     private void chainApexJob() {
-        Record_Reassignment_Task__c logHeadRecord;
+        Record_Reassignment_Task__c logHeadRecord = this.popLog();
+
         if (this.objectNameList.size() > 0) {
-            publishReport();
             Database.executeBatch(this);
         }
-        else {
-            emailReport();
-            publishReport();
-        }
-        logHeadRecord = this.popLog();
         insert logHeadRecord;
         this.pushLog(logHeadRecord);
         this.ringTheBell();
+        this.emailReport();
+        this.publishReport();
     }
 
     private AsyncApexJob getApexJob(Database.BatchableContext context) {
@@ -226,6 +207,11 @@ public without sharing class ReassignRecord implements
     private CustomNotificationType getCustomNotificationType(String notificationName) {
         return [SELECT Id, DeveloperName FROM CustomNotificationType
             WHERE DeveloperName =: notificationName];
+    }
+
+    private EmailTemplate getCustomEmailTemplate(String emailTemplateName) {
+        return [SELECT Id, DeveloperName FROM EmailTemplate
+            WHERE DeveloperName =: emailTemplateName];
     }
 
     private Record_Reassignment_Task__c popLog() {
@@ -246,5 +232,9 @@ public without sharing class ReassignRecord implements
 
     private void pushLog(Record_Reassignment_Task__c record) {
         this.sfLog.add(record);
+    }
+
+    private void exceptionHandler(Exception e) {
+
     }
 }

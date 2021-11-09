@@ -20,6 +20,7 @@ public without sharing class ReassignRecordPageController {
     @AuraEnabled
     public static Boolean updateRecords(User currentOwner, User newOwner,
             List<String> objectList, Boolean enableEmails){
+        if (ReassignRecordPageHelper.isAsyncJobInProgress()) return false;
         ReassignRecord reassignRecordJob = new ReassignRecord(currentOwner.Id,
             newOwner.Id, objectList);
         reassignRecordJob.oldOwnerName = currentOwner.Name;

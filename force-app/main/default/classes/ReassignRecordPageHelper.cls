@@ -2,6 +2,7 @@ public without sharing class ReassignRecordPageHelper {
 
     // Public constants
     public static final String STRING_DELIMITER = ';';
+    public static final String REASSIGN_RECORD_CLASS_ID = getReassignRecordClassId();
     public static final List<String> OBJECT_FILTER_LIST = new List<String> {
         'Account',
         'Opportunity',
@@ -38,4 +39,21 @@ public without sharing class ReassignRecordPageHelper {
         orgObjects.sort();
         return orgObjects;
     }
+
+    private static String getReassignRecordClassId() {
+        String reassignRecordClassName = ReassignRecord.class.getName();
+        String reassignRecordClassId;
+        reassignRecordClassId = [SELECT Id FROM ApexClass
+            WHERE Name = :reassignRecordClassName LIMIT 1].Id;
+        return reassignRecordClassId;
+    }
+
+    public static Boolean isAsyncJobInProgress() {
+        List<AsyncApexJob> apexJobs = [SELECT ApexClassId, Status 
+            FROM AsyncApexJob
+            WHERE ApexClassId =: REASSIGN_RECORD_CLASS_ID
+            AND Status != 'Completed' AND Status != 'Failed'];
+        return !apexJobs.isEmpty();
+    }
+
 }
