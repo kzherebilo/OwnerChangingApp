@@ -1,0 +1,10 @@
+<aura:component>
+
+    <aura:attribute name="userId" type="String" />
+
+    <lightning:recordEditForm objectApiName="Record_Reassignment_Task__c">
+        <lightning:messages />
+        <lightning:inputField fieldName="New_Owner__c" />
+    </lightning:recordEditForm>
+
+</aura:component>	

@@ -27,6 +27,7 @@
                                      aura:id="currentOwner" />
                     <c:userSelection title="New owner"
                                      aura:id="newOwner" />
+                    <c:userLookup />
                     <lightning:input aura:id="enableEmails"
                                      name="enableEmails"
                                      type="toggle"

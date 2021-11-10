@@ -1,6 +1,13 @@
 <apex:page docType="html-5.0" label="OwnerChangingPage" controller="OwnerChangingPageController">
     <apex:includeScript value="{! $Resource.json2_js }"/>
-    <script>var token = '{!$Api.Session_ID}';</script>
+    <style type="text/css">
+        .buttons {
+            padding: 5px;
+        }
+    </style>
+    <script type="text/javascript">
+        var token = '{!$Api.Session_ID}';
+    </script>
     <script id="LogBufferInit" >var updateLog = '';</script>
     <script type="text/javascript" src="{!URLFOR($Resource.cometd_zip, 'dojo/dojo.js')}" data-dojo-config="async: 1"></script>
     <script type="text/javascript" src="{!$Resource.updatelog_js}"></script>
@@ -24,6 +31,7 @@
                 <apex:pageBlockSectionItem>
                     <apex:pageBlockSection columns="1">
                         <apex:outputLabel>SELECT OBJECTS</apex:outputLabel>
+
                         <apex:pageBlockSectionItem>
                             <apex:pageBlockSection columns="3">
                                 <apex:pageBlockSectionItem dataStyle="width:35%" labelStyle="width:0%">
@@ -51,10 +59,17 @@
                         
                         <apex:pageBlockSection>
                             <apex:pageBlockSectionItem>
-                                <apex:commandButton id="reassignOwner" action="{! updateOwner }" value="Reassign" reRender="JobMessages" ></apex:commandButton>
+                                <apex:commandButton id="reassignOwner"
+                                                    action="{! updateOwner }"
+                                                    value="Reassign"
+                                                    reRender="JobMessages"
+                                                    styleClass="buttons">
+                                </apex:commandButton>
                             </apex:pageBlockSectionItem>
                             <apex:pageBlockSectionItem>
-                                <apex:inputCheckbox value="{! enableEmails }">Email notifications</apex:inputCheckbox>
+                                <apex:inputCheckbox value="{! enableEmails }">
+                                    Email notifications
+                                </apex:inputCheckbox>
                             </apex:pageBlockSectionItem>
                         </apex:pageBlockSection>
                         
@@ -64,10 +79,18 @@
 
                 <apex:pageBlockSectionItem>
                     <apex:pageBlockSection columns="1" >
-                        <apex:outputLabel>TO USER</apex:outputLabel>
+                        <apex:outputLabel>
+                            TO USER
+                        </apex:outputLabel>
                         <apex:pageBlockSectionItem>
-                            <apex:outputLabel>New owner</apex:outputLabel>
-                            <apex:inputText style="width:80%" id="NewOwnerSearchBar" value="{! selectedNewOwnerName }" html-placeholder="User name" list="{! userSuggestionList }" ></apex:inputText>
+                            <apex:outputLabel>
+                                New owner
+                            </apex:outputLabel>
+                            <apex:inputField style="width:80%"
+                                            id="NewOwnerSearchBar"
+                                            value="{! dummyLogRecord.New_Owner__c }"
+                                            html-placeholder="User name">
+                            </apex:inputField>
                         </apex:pageBlockSectionItem>
                     </apex:pageBlockSection>
                 </apex:pageBlockSectionItem>

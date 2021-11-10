@@ -1,13 +1,18 @@
 public without sharing class OwnerChangingPageController {
 
     // Public properties
-    public String       selectedOldOwnerName    { get; set; }
-    public String       selectedNewOwnerName    { get; set; }
-    public String[]     selectedObjects         { get; set; }
-    public String[]     objectsToUpdate         { get; set; }
-    public Boolean      enableEmails            { get; set; }
-    
-    public String userSuggestionList      {
+    public List<SelectOption> orgObjects = new List<SelectOption> ();
+    public List<SelectOption> userObjects = new List<SelectOption> ();
+
+    public String selectedOldOwnerName { get; set; }
+    public String selectedNewOwnerName { get; set; }
+    public String[] selectedObjects { get; set; }
+    public String[] objectsToUpdate { get; set; }
+    public Boolean enableEmails { get; set; }
+    public Record_Reassignment_Task__c dummyLogRecord { get; set; }
+
+
+    public String userSuggestionList {
         get {
             String suggestions = '';
             if (this.userOptionMap.isEmpty()) this.getUsers();
@@ -17,22 +22,7 @@ public without sharing class OwnerChangingPageController {
             return suggestions;
         }
     }
-    public List<SelectOption> orgObjects = new List<SelectOption> ();
-    public List<SelectOption> userObjects = new List<SelectOption> ();
-
-    //
-    // Private properties
-    private final List<String> objectFilter = new List<String> {
-        'Account',
-        'Opportunity',
-        'Lead',
-        'Contact'
-    };
-    
-    private Map<Id, String> userOptionMap       = new Map<Id, String> ();
-    private Id          updateOwnerClassId;
-    private String      eventBuffer             = '';
-    private String      verifiedOldOwnerName    {
+    public String verifiedOldOwnerName {
         get {
             if (this.userOptionMap.values().contains(this.selectedOldOwnerName)) {
                 return this.selectedOldOwnerName;
@@ -40,15 +30,12 @@ public without sharing class OwnerChangingPageController {
             return '';
         }
     }
-    private String      verifiedNewOwnerName    {
+    public String verifiedNewOwnerName {
         get {
-            if (this.userOptionMap.values().contains(this.selectedNewOwnerName)) {
-                return this.selectedNewOwnerName;
-            }
-            return ''; 
+            return this.userOptionMap.get(dummyLogRecord.New_Owner__c);
         }
     }
-    private String      verifiedOldOwnerId      {
+    public String verifiedOldOwnerId {
         get {
             for (Id userId : this.userOptionMap.keySet()) {
                 if (this.userOptionMap.get(userId) == verifiedOldOwnerName) {
@@ -58,17 +45,12 @@ public without sharing class OwnerChangingPageController {
             return '';
         }
     }
-    private String      verifiedNewOwnerId      {
+    public String      verifiedNewOwnerId      {
         get {
-            for (Id userId : this.userOptionMap.keySet()) {
-                if (this.userOptionMap.get(userId) == verifiedNewOwnerName) {
-                    return (String) userId;
-                }
-            }
-            return '';
+            return dummyLogRecord.New_Owner__c;
         }
     }
-    private List<String> verifiedObjectList     {
+    public List<String> verifiedObjectList     {
         get {
             List<String> objectNameList = new List<string> ();
             for (SelectOption option : userObjects) {
@@ -77,6 +59,11 @@ public without sharing class OwnerChangingPageController {
             return objectNameList;
         }
     }
+
+    //
+    // Private properties
+    private Map<Id, String> userOptionMap = new Map<Id, String> ();
+    private String eventBuffer = '';
     private List<SelectOption> emptyPickList    {
         get {
             List<SelectOption> objectsEmptyList = new List<SelectOption> ();
@@ -89,6 +76,11 @@ public without sharing class OwnerChangingPageController {
 
 /**************************************************************************************************/
 /**************************************************************************************************/
+
+    // Constructor
+    public OwnerChangingPageController() {
+        dummyLogRecord = new Record_Reassignment_Task__c();
+    }
 
     // Methods
     public Map<Id, String> getUsers() {
@@ -149,62 +141,7 @@ public without sharing class OwnerChangingPageController {
     }
 
     public void updateOwner() {
-        String logMessage = '';
-        ApexPages.Severity logMsgSeverity = ApexPages.Severity.INFO;
-        
-        // Make sure the asynchronous class with same class ID is not in the
-        // queue. Firstly, determine the async class name (if null) and get the
-        // class ID by its name
-        if (this.updateOwnerClassId == null) {
-            String updateOwnerClassName = ReassignRecord.class.getName();
-            this.updateOwnerClassId = [SELECT Id FROM ApexClass
-                WHERE Name = :updateOwnerClassName LIMIT 1].Id;
-        }
-        // Secondly, query all async jobs cureently being processed and filter
-        // the results by the class ID obtained eralier
-        List<AsyncApexJob> apexJobs = [SELECT ApexClassId, Status FROM AsyncApexJob
-            WHERE ApexClassId =: this.updateOwnerClassId
-            AND Status != 'Completed' AND Status != 'Failed'];
-        // If the list of active jobs is not empty, then apparently an owner 
-        // update task is already launched by someone
-        logMsgSeverity = ApexPages.Severity.ERROR;
-        if (!apexJobs.isEmpty()) { 
-            logMessage = 'Another task is being processed. Please try again later';
-            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
-            return;
-        }
-        // A series of trivial checks of user input
-        logMsgSeverity = ApexPages.Severity.WARNING;
-        if (String.isBlank(this.verifiedOldOwnerName)) {
-            logMessage = '"From"-user field is required! '
-                + 'Please select a user whose ownership to be revoked';
-            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
-            return;
-        }
-        if (String.isBlank(this.verifiedNewOwnerName)) {
-            logMessage = '"To"-user field is required! '
-                + 'Please select a new owner of the records';
-            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
-            return;
-        }
-        if (this.verifiedOldOwnerName == this.verifiedNewOwnerName) {
-            logMessage = 'Current and new owner are identical! '
-                + 'Reassignment is pointless! Select different users';
-            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
-            return;
-        }
-        if (this.verifiedObjectList.isEmpty()) {
-            logMessage = 'No object type is selected! '
-                + 'Please specify object types, such as Accounts or Leads; the '
-                + 'owner of the records belonging to each of the selected type '
-                + 'will be updated';
-            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
-            return;
-        }
-        logMsgSeverity = ApexPages.Severity.INFO;
-        logMessage = 'Reassignment task is initiated';
-        ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
-
+        if (!ReassignRecordPageHelper.isApexFormValid(this)) return;
         ReassignRecord reassignRecordJob = new ReassignRecord(
             this.verifiedOldOwnerId, this.verifiedNewOwnerId, this.verifiedObjectList);
         reassignRecordJob.oldOwnerName = verifiedOldOwnerName;
@@ -214,12 +151,13 @@ public without sharing class OwnerChangingPageController {
         Database.executeBatch(reassignRecordJob);
     }
 
-
     public void updateJobState() {
         this.eventBuffer = ApexPages.currentPage().getParameters().get(
             'JSONUpdateEventList');
         this.postMessage(this.eventBuffer, 'END_OF_MSG');
     }
+
+/************************************** HELPER METHODS ********************************************/
 
     public void postMessage(String events, String delimiter) {
         Update_Owner_Event__e updateEvent = new Update_Owner_Event__e ();

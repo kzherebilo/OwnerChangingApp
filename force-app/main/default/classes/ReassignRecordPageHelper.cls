@@ -56,4 +56,47 @@ public without sharing class ReassignRecordPageHelper {
         return !apexJobs.isEmpty();
     }
 
+    public static Boolean isApexFormValid(OwnerChangingPageController controller) {
+        String logMessage;
+        ApexPages.Severity logMsgSeverity;
+
+        logMsgSeverity = ApexPages.Severity.ERROR;
+        if (ReassignRecordPageHelper.isAsyncJobInProgress()) { 
+            logMessage = 'Another task is being processed. Please try again later';
+            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
+            return false;
+        }
+        // A series of trivial checks of user input
+        logMsgSeverity = ApexPages.Severity.WARNING;
+        if (String.isBlank(controller.verifiedOldOwnerName)) {
+            logMessage = '"From"-user field is required! '
+                + 'Please select a user whose ownership to be revoked';
+            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
+            return false;
+        }
+        if (String.isBlank(controller.verifiedNewOwnerName)) {
+            logMessage = '"To"-user field is required! '
+                + 'Please select a new owner of the records';
+            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
+            return false;
+        }
+        if (controller.verifiedOldOwnerName == controller.verifiedNewOwnerName) {
+            logMessage = 'Current and new owner are identical! '
+                + 'Reassignment is pointless! Select different users';
+            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
+            return false;
+        }
+        if (controller.verifiedObjectList.isEmpty()) {
+            logMessage = 'No object type is selected! '
+                + 'Please specify object types, such as Accounts or Leads; the '
+                + 'owner of the records belonging to each of the selected type '
+                + 'will be updated';
+            ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
+            return false;
+        }
+        logMsgSeverity = ApexPages.Severity.INFO;
+        logMessage = 'Reassignment task is initiated';
+        ApexPages.addMessage(new ApexPages.Message(logMsgSeverity, logMessage));
+        return true;
+    }
 }
