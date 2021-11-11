@@ -1,0 +1,37 @@
+<template>
+    <div class="slds-box slds-theme_default">
+        <div class="slds-grid slds-gutters">
+            <div class="slds-col slds-size_3-of-12">
+                <span>
+                    <c-userform></c-userform>
+                    <lightning-input name="enableEmails"
+                                     type="toggle"
+                                     message-toggle-active=""
+                                     message-toggle-inactive=""
+                                     label="Email Notifications?"
+                                     class="slds-var-m-around_small"
+                                     onchange={onEnableEmailUpdateHandler} >
+                    </lightning-input>
+                    <lightning-button name="reassignAction"
+                                      variant="brand"
+                                      label="Reassign"
+                                      title="Reassign"
+                                      class="slds-var-m-around_small"
+                                      onclick={onReassignClickHandler}
+                                      disabled={isReassignButtonDisabled}>
+                    </lightning-button>
+                </span>
+            </div>
+            <div class="slds-col slds-size_5-of-12">
+                <span>
+                    <c-objectform></c-objectform>
+                </span>
+            </div>
+            <div class="slds-col slds-size_4-of-12">
+                <span>
+                    <c-notesform></c-notesform>
+                </span>
+            </div>
+        </div>
+    </div>
+</template>

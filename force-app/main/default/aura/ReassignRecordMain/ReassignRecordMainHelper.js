@@ -40,6 +40,7 @@
     setupEventBus: function(component) {
         let empApi = component.find('empApi');
         let channel = this.getPlatformEventChannel();
+        let notificationBar = this.getNotificationBar(component);
         empApi.onError($A.getCallback(function(error) {
             console.debug('EMP_API_DEBUG: ' + JSON.stringify(error));
         }));
@@ -49,7 +50,7 @@
                 JSON.stringify(eventReceived));
             if (this.isFianalPlatformEvent(eventReceived)) {
                 component.set('v.isLoading', false);
-                this.getNotificationBar(component).showToast({
+                notificationBar.showToast({
                     "variant": "success",
                     "title": "Success!",
                     "message": "Records have been updated!"

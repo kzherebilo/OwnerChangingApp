@@ -1,0 +1,10 @@
+<template>
+    <lightning-dual-listbox name="objectsToUpdate"
+                            label="Select objects to update"
+                            source-label="Available"
+                            selected-label="Selected"
+                            field-level-help="Select object you would like to reassign to a new owner"
+                            options={objectOptions}
+                            onchange={handleChange}>
+    </lightning-dual-listbox>
+</template>
