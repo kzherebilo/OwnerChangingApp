@@ -11,6 +11,7 @@
 
     <aura:attribute name="currentOwner" type="User" />
     <aura:attribute name="newOwner" type="User" />
+    <aura:attribute name="orgUsers" type="List" />
     <aura:attribute name="objectsToUpdate" type="List" />
     <aura:attribute name="isLoading" type="Boolean" default="false" />
 
@@ -25,9 +26,7 @@
                 <span>
                     <c:userSelection title="Current owner"
                                      aura:id="currentOwner" />
-                    <c:userSelection title="New owner"
-                                     aura:id="newOwner" />
-                    <c:userLookup />
+                    <c:userLookup aura:id="newOwner"/>
                     <lightning:input aura:id="enableEmails"
                                      name="enableEmails"
                                      type="toggle"

@@ -6,12 +6,15 @@
     },
 
     onUserUpdateHandler: function(component, event, helper) {
+        let oldOwnerSelector = helper.getCurrentOwnerComponent(component);
+        let newOwnerSelector = helper.getNewOwnerComponent(component);
         switch (event.getSource()) {
-            case helper.getCurrentOwnerComponent(component):
+            case oldOwnerSelector:
                 component.set('v.currentOwner', event.getParam('selectedUser'));
                 break;
-            case helper.getNewOwnerComponent(component):
-                component.set('v.newOwner', event.getParam('selectedUser'));
+            case newOwnerSelector:
+                let userId = newOwnerSelector.get('v.userId');
+                component.set('v.newOwner', helper.getUserById(component, userId));
                 break;
         }
     },

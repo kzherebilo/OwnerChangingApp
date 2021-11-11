@@ -2,7 +2,7 @@ public without sharing class ReassignRecordPageController {
 
     @AuraEnabled
     public static List<User> getUsers() {
-        return [SELECT Name, Username FROM User];
+        return [SELECT Id, Name, Username FROM User];
     }
 
     @AuraEnabled

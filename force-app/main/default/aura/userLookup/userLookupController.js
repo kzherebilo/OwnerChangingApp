@@ -1,5 +1,5 @@
 ({
-    myAction : function(component, event, helper) {
-
+    onUserChange : function(component, event, helper) {
+        helper.fireOnUserUpdateEvent(component);
     }
 })

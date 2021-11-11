@@ -1,10 +1,12 @@
 <aura:component>
-
+    <aura:registerEvent name="updateUser" type="c:ownerUpdate" />
     <aura:attribute name="userId" type="String" />
 
     <lightning:recordEditForm objectApiName="Record_Reassignment_Task__c">
         <lightning:messages />
-        <lightning:inputField fieldName="New_Owner__c" />
+        <lightning:inputField fieldName="New_Owner__c" 
+                              value="{!v.userId}" 
+                              onchange="{!c.onUserChange}"/>
     </lightning:recordEditForm>
 
 </aura:component>	

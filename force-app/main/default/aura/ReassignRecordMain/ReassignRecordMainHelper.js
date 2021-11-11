@@ -2,11 +2,10 @@
     getOrgUsers: function(component) {
         let action = component.get('c.getUsers');
         let currentOwnerSelector = this.getCurrentOwnerComponent(component);
-        let newOwnerSelector = this.getNewOwnerComponent(component);
         action.setCallback(this, function(response) {
             if (response.getState() === 'SUCCESS') {
                 currentOwnerSelector.set('v.orgUsers', response.getReturnValue());
-                newOwnerSelector.set('v.orgUsers', response.getReturnValue());
+                component.set('v.orgUsers', response.getReturnValue());
             }
         });
         $A.enqueueAction(action);
@@ -23,6 +22,19 @@
             }
         });
         $A.enqueueAction(action);
+    },
+
+    getUserById: function(component, id) {
+        let orgUsers = component.get('v.orgUsers');
+        let user;
+        if (!orgUsers) return user;
+        for (let i = 0; i < orgUsers.length; i++) {
+            if (orgUsers[i].Id == id) {
+                user = orgUsers[i];
+                break;
+            }
+        }
+        return user;
     },
 
     setupEventBus: function(component) {
