@@ -3,10 +3,9 @@ public without sharing class ReassignRecord implements
     
     public  String                              oldOwnerName;
     public  String                              newOwnerName;
-    public  String                              notificationName;
-    public  String                              emailTemplateName;
     public  Boolean                             enableEmails;
     public  List<String>                        emailAddressList;
+    public  String                              notes;
     
     private String                              oldOwnerId;
     private String                              newOwnerId;
@@ -27,27 +26,34 @@ public without sharing class ReassignRecord implements
         this.objectNameList = objectNameList;
         this.oldOwnerName = '';
         this.newOwnerName = '';
+        this.notes = '';
         this.enableEmails = false;
-        this.notificationName = 'Record_Reassignment_Notification';
-        this.emailTemplateName = 'Record_Reassignment_Email_Template';
         this.numberOfRecordsProcessed = 0;
         this.numberOfRecordsUpdated = 0;
         this.emailAddressList = new List<String> ();
         this.sfLog = new List<Record_Reassignment_Task__c> ();
+    }
+
+    public CustomNotificationType initCustomNotifications(String notificationName) {
         try {
-            this.notificationType = this.getCustomNotificationType(
-                this.notificationName);
+            this.notificationType 
+                = this.getCustomNotificationType(notificationName);
         }
         catch (Exception e) {
             this.exceptionHandler(e);
         }
+        return this.notificationType;
+    }
+
+    public EmailTemplate initEmailTemplate(String emailTemplateName) {
         try {
-            this.emailVfTemplate = this.getCustomEmailTemplate(
-                this.emailTemplateName);
+            this.emailVfTemplate
+                = this.getCustomEmailTemplate(emailTemplateName);
         }
         catch (Exception e) {
             this.exceptionHandler(e);
         }
+        return this.emailVfTemplate;
     }
 
     public Database.QueryLocator start(Database.BatchableContext context) {
@@ -172,6 +178,7 @@ public without sharing class ReassignRecord implements
         newLogRecord.Number_Of_Records_Updated__c = this.numberOfRecordsUpdated;
         newLogRecord.Apex_Batches_Processed__c = this.finishedApexJob.JobItemsProcessed;
         newLogRecord.Apex_Total_Batches__c = this.finishedApexJob.TotalJobItems;
+        newLogRecord.Notes__c = this.notes;
         if (this.finishedApexJob.NumberOfErrors > 0) {
             newLogRecord.Error_Type__c = 'APEX;';
             newLogRecord.Error_Description__c = this.finishedApexJob.ExtendedStatus;

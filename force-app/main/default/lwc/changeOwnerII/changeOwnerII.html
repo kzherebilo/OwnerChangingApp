@@ -1,9 +1,17 @@
 <template>
+    <template if:true={isPageDisabled} >
+        <lightning-spinner alternative-text={disabledPageAltText}
+                           size="medium"
+                           variant="brand">
+        </lightning-spinner>
+    </template>
     <div class="slds-box slds-theme_default">
         <div class="slds-grid slds-gutters">
             <div class="slds-col slds-size_3-of-12">
                 <span>
-                    <c-userform></c-userform>
+                    <c-userform onoldownerchange={onOldOwnerChangeHandler}
+                                onnewownerchange={onNewOwnerChangeHandler}>
+                    </c-userform>
                     <lightning-input name="enableEmails"
                                      type="toggle"
                                      message-toggle-active=""
@@ -24,12 +32,15 @@
             </div>
             <div class="slds-col slds-size_5-of-12">
                 <span>
-                    <c-objectform></c-objectform>
+                    <c-objectform onupdate={onObjectsChangeHandler}
+                                  onexception={onObjectFormExceptionHandler}>
+                    </c-objectform>
                 </span>
             </div>
             <div class="slds-col slds-size_4-of-12">
                 <span>
-                    <c-notesform></c-notesform>
+                    <c-notesform onnoteschange={onNotesChangeHandler}>
+                    </c-notesform>
                 </span>
             </div>
         </div>

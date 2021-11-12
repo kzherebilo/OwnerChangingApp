@@ -2,30 +2,28 @@ import { api, LightningElement } from 'lwc';
 import getObjects from '@salesforce/apex/ReassignRecordPageController.getObjects';
 
 export default class Objectform extends LightningElement {
-    _selectedObjects = [];
-    _objectOptions = [];
+    __objectOptions__ = [];
     
     connectedCallback() {
         getObjects()
             .then(objectOptionList => {
-                this._objectOptions = this.parseObjectOptionList(objectOptionList);
+                this.__objectOptions__ 
+                    = this.parseObjectOptionList(objectOptionList);
             })
             .catch(error => {
                 this.exceptionHandler(error);
             });
     }
 
-    @api
-    get selectedObjects() {
-        return this._selectedObjects;
-    }
-
     get objectOptions() {
-        return this._objectOptions;
+        return this.__objectOptions__;
     }
 
-    handleChange(event) {
-        this._selectedObjects = event.detail.value;
+    onObjectsChangeHandler(event) {
+        const onObjectsChangeEvent = new CustomEvent('update', {
+            detail: event.detail.value
+        });
+        this.dispatchEvent(onObjectsChangeEvent);
     }
 
     parseObjectOptionList(objectOptionList) {
@@ -42,7 +40,10 @@ export default class Objectform extends LightningElement {
         return parsedObjectList;
     }
 
-    esceptionHandler(error) {
-
+    exceptionHandler(error) {
+        const objectFormExceptionEvent = new CustomEvent('exception', {
+            detail: error
+        });
+        this.dispatchEvent(objectFormExceptionEvent);
     }
 }

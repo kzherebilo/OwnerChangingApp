@@ -5,9 +5,15 @@ import updateRecords from '@salesforce/apex/ReassignRecordPageController.updateR
 
 export default class ChangeOwnerII extends LightningElement {
     __orgUsers__ = [];
+    __oldOwnerId__ = '';
+    __newOwnerId__ = '';
+    __objectsToUpdate__ = [];
     __enableEmails__ = false;
+    __notes__ = '';
 
     isReassignButtonDisabled = false;
+    isPageDisabled = false;
+    disabledPageAltText = '';
 
     connectedCallback() {
         getUsers()
@@ -15,22 +21,39 @@ export default class ChangeOwnerII extends LightningElement {
                 this.__orgUsers__ = userList;
             })
             .catch(error => {
-                this.exceptionHandler(error);
+                this.exceptionHandler(error, 'ROOT CMP');
             });
     }
 
     onEnableEmailUpdateHandler(event) {
         this.__enableEmails__ = event.detail.checked;
-        console.debug('emails ' + this.__enableEmails__);
+    }
+
+    onNotesChangeHandler(event) {
+        this.__notes__ = event.detail;
+    }
+
+    onOldOwnerChangeHandler(event) {
+        this.__oldOwnerId__ = event.detail;
+    }
+
+    onNewOwnerChangeHandler(event) {
+        this.__newOwnerId__ = event.detail;
+    }
+
+    onObjectsChangeHandler(event) {
+        this.__objectsToUpdate__ = event.detail;
+    }
+
+    onObjectFormExceptionHandler(event) {
+        this.exceptionHandler(event.detail, 'OBJECT FORM');
     }
 
     onReassignClickHandler(event) {
         this.isReassignButtonDisabled = true;
-        const userform = this.template.querySelector('c-userform');
-        const oldOwner = this.getUserById(userform.oldOwnerId);
-        const newOwner = this.getUserById(userform.newOwnerId);
-        const objectsToUpdate
-            = this.template.querySelector('c-objectform').selectedObjects;
+        const oldOwner = this.getUserById(this.__oldOwnerId__);
+        const newOwner = this.getUserById(this.__newOwnerId__);
+        const objectsToUpdate = this.__objectsToUpdate__;
         if (!this.validateForm(oldOwner, newOwner, objectsToUpdate)) {
             this.isReassignButtonDisabled = false;
             return;
@@ -39,19 +62,15 @@ export default class ChangeOwnerII extends LightningElement {
             currentOwner: oldOwner,
             newOwner: newOwner,
             objectList: objectsToUpdate,
-            enableEmails: this.__enableEmails__
+            enableEmails: this.__enableEmails__,
+            notes: this.__notes__
         })
-            .then(result => {
-                const toastEvent = new ShowToastEvent({
-                    variant: 'info',
-                    title: 'Success!',
-                    message: 'Updating records has been initiated'
-                });
-                this.dispatchEvent(toastEvent);
+            .then(response => {
+                this.onUpdateRecordsResponse(response);
                 this.isReassignButtonDisabled = false;
             })
             .catch(error => {
-                this.exceptionHandler(error);
+                this.exceptionHandler(error,  'UPDATE REQ');
                 this.isReassignButtonDisabled = false;
             })
     }
@@ -100,7 +119,36 @@ export default class ChangeOwnerII extends LightningElement {
         return true;
     }
 
-    exceptionHandler(error) {
-        console.log('ROOT_CMP_ERROR: ' + JSON.stringify(error));
+    onUpdateRecordsResponse(response) {
+        let toastEvent;
+        if (response) {
+            toastEvent = new ShowToastEvent({
+                variant: 'success',
+                title: 'Success',
+                message: 'Updating records has been initiated'
+            });
+        }
+        else {
+            toastEvent = new ShowToastEvent({
+                variant: 'error',
+                title: 'Error',
+                message: 'Update request denied'
+            });
+        }
+        this.dispatchEvent(toastEvent);
+    }
+
+    exceptionHandler(error, source) {
+        console.log(source + ' ERROR: ' + JSON.stringify(error));
+        if (source == 'UPDATE REQ') return;
+        if (this.isPageDisabled) return;
+        this.isPageDisabled = true;
+        try {
+            this.disabledPageAltText = 'Failed to access server. ' 
+                + error.body.message;
+        }
+        catch (e) {
+            this.disabledPageAltText = 'Failed to load the page';
+        }
     }
 }

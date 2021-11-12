@@ -45,12 +45,12 @@ public without sharing class OwnerChangingPageController {
             return '';
         }
     }
-    public String      verifiedNewOwnerId      {
+    public String verifiedNewOwnerId {
         get {
             return dummyLogRecord.New_Owner__c;
         }
     }
-    public List<String> verifiedObjectList     {
+    public List<String> verifiedObjectList {
         get {
             List<String> objectNameList = new List<string> ();
             for (SelectOption option : userObjects) {
@@ -147,6 +147,10 @@ public without sharing class OwnerChangingPageController {
         reassignRecordJob.oldOwnerName = verifiedOldOwnerName;
         reassignRecordJob.newOwnerName = verifiedNewOwnerName;
         reassignRecordJob.enableEmails = enableEmails;
+        reassignRecordJob.initCustomNotifications(
+            'Record_Reassignment_Notification');
+        reassignRecordJob.initEmailTemplate(
+            'Record_Reassignment_Email_Template');
         // Check for LimitException is required!!!
         Database.executeBatch(reassignRecordJob);
     }
